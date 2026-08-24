@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Politique de confidentialité — Dabber",
+  title: "Politique de confidentialité",
 };
 
 export default function PrivacyPage() {
@@ -27,11 +27,16 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-2 pl-5 text-muted">
             <li>
               <span className="font-medium text-ink">
-                Lors de la connexion avec Facebook :
+                Lors de la création de votre compte :
               </span>{" "}
-              votre nom, votre adresse e-mail et votre photo de profil, tels
-              que fournis par Facebook au moment de la connexion. Nous ne
-              recevons pas votre mot de passe Facebook.
+              votre nom et votre adresse e-mail. Votre mot de passe est géré
+              de manière sécurisée par notre service d&apos;authentification et
+              n&apos;est jamais affiché publiquement.
+            </li>
+            <li>
+              <span className="font-medium text-ink">Numéro WhatsApp :</span>{" "}
+              si vous choisissez de l&apos;ajouter, il est affiché sur vos annonces
+              afin que les personnes intéressées puissent vous contacter.
             </li>
             <li>
               <span className="font-medium text-ink">
@@ -80,8 +85,8 @@ export default function PrivacyPage() {
             Les données de compte, les annonces et les messages sont stockés
             chez notre hébergeur de base de données, Supabase. Les photos
             sont stockées dans le service de stockage de fichiers de
-            Supabase. La connexion utilise le service d&apos;authentification
-            de Meta (Facebook Login).
+            Supabase. La création de compte et la connexion utilisent le
+            service d&apos;authentification de Supabase.
           </p>
         </section>
 

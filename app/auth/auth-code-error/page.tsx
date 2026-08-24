@@ -7,8 +7,7 @@ export default function AuthCodeErrorPage() {
         La connexion a échoué
       </h1>
       <p className="mt-2 text-sm text-muted">
-        Une erreur est survenue pendant la connexion avec Facebook. Veuillez
-        réessayer.
+        Le lien de confirmation est invalide ou a expiré. Veuillez réessayer.
       </p>
       <Link
         href="/login"

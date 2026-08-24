@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BadgeCheck, ImageOff, User as UserIcon } from "lucide-react";
+import { ImageOff, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, Profile } from "@/lib/supabase/types";
 import ProfileForm from "@/components/account/ProfileForm";
 import SignOutButton from "@/components/account/SignOutButton";
+
+export const metadata: Metadata = {
+  title: "Mon compte",
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -52,15 +58,7 @@ export default async function AccountPage() {
             )}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-base font-semibold text-ink">
-                {displayName}
-              </h2>
-              <BadgeCheck
-                className="h-4 w-4 text-[#1877F2]"
-                aria-label="Connecté via Facebook"
-              />
-            </div>
+            <h2 className="text-base font-semibold text-ink">{displayName}</h2>
             <p className="mt-0.5 text-sm text-muted">{user.email}</p>
           </div>
         </div>

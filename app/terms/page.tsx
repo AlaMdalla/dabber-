@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Conditions d'utilisation — Dabber",
+  title: "Conditions d'utilisation",
 };
 
 export default function TermsPage() {
@@ -39,9 +39,10 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold">3. Compte utilisateur</h2>
           <p className="mt-2 text-muted">
-            La connexion se fait via Facebook Login. Vous êtes responsable de
-            l&apos;exactitude des informations affichées sur votre profil et
-            de la confidentialité de l&apos;accès à votre compte Facebook.
+            La connexion se fait avec votre adresse e-mail et votre mot de
+            passe. Vous êtes responsable de l&apos;exactitude des informations
+            affichées sur votre profil et de la confidentialité de vos
+            identifiants de connexion.
           </p>
         </section>
 

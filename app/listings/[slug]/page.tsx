@@ -1,28 +1,70 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ImageOff, MapPin, User as UserIcon } from "lucide-react";
+import { ImageOff, MapPin, MessageCircle, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingWithOwner } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
+import { SITE_URL } from "@/lib/constants";
 import { headers } from "next/headers";
 import DeleteListingButton from "@/components/listings/DeleteListingButton";
 import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
 import StartConversationForm from "@/components/messages/StartConversationForm";
 
+const getListing = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("*, profiles(full_name, avatar_url, whatsapp_number)")
+    .eq("slug", slug)
+    .single<ListingWithOwner>();
+  return listing;
+});
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/listings/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const listing = await getListing(slug);
+
+  if (!listing) {
+    return {};
+  }
+
+  const categoryName =
+    categories.find((category) => category.slug === listing.category_slug)
+      ?.name ?? listing.category_slug;
+  const title = `${listing.name} — Location à ${listing.governorate}`;
+  const description =
+    listing.description?.slice(0, 160) ??
+    `Louez "${listing.name}" (${categoryName}) à ${listing.governorate} sur Dabber.`;
+  const url = `${SITE_URL}/listings/${listing.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      images: listing.image_url ? [{ url: listing.image_url }] : undefined,
+    },
+  };
+}
+
 export default async function ListingDetailPage({
   params,
 }: PageProps<"/listings/[slug]">) {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const [{ data: listing }, { data: userData }] = await Promise.all([
-    supabase
-      .from("listings")
-      .select("*, profiles(full_name, avatar_url)")
-      .eq("slug", slug)
-      .single<ListingWithOwner>(),
-    supabase.auth.getUser(),
+  const [listing, { data: userData }] = await Promise.all([
+    getListing(slug),
+    (await createClient()).auth.getUser(),
   ]);
 
   if (!listing) {
@@ -40,9 +82,37 @@ export default async function ListingDetailPage({
   const host = headersList.get("host");
   const protocol = host?.startsWith("localhost") ? "http" : "https";
   const listingUrl = `${protocol}://${host}/listings/${listing.slug}`;
+  const whatsappNumber = listing.profiles?.whatsapp_number?.replace(/\D/g, "");
+  const whatsappMessage = encodeURIComponent(
+    `Bonjour, je suis intéressé(e) par votre annonce « ${listing.name} » sur Dabber : ${listingUrl}`,
+  );
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.name,
+    description: listing.description ?? undefined,
+    image: listing.image_url ?? undefined,
+    category: categoryName,
+    offers: {
+      "@type": "Offer",
+      url: listingUrl,
+      priceCurrency: "TND",
+      price: listing.price_per_day ?? undefined,
+      availability:
+        listing.availability === "disponible"
+          ? "https://schema.org/InStock"
+          : "https://schema.org/LimitedAvailability",
+      areaServed: listing.governorate,
+    },
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div>
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-subtle">
@@ -134,7 +204,18 @@ export default async function ListingDetailPage({
           )}
 
           {!isOwner && (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col gap-3">
+              {whatsappNumber && (
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+                >
+                  <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                  Contacter sur WhatsApp
+                </a>
+              )}
               <StartConversationForm
                 listingId={listing.id}
                 listingSlug={listing.slug}

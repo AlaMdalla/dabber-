@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
+
+export const metadata: Metadata = {
+  title: "Publier une annonce",
+  robots: { index: false, follow: false },
+};
 
 export default async function NewListingPage() {
   const supabase = await createClient();

@@ -4,6 +4,7 @@ export interface Profile {
   avatar_url: string | null;
   email: string | null;
   facebook_id: string | null;
+  whatsapp_number: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,7 +27,7 @@ export interface Listing {
 }
 
 export interface ListingWithOwner extends Listing {
-  profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
+  profiles: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
 }
 
 export interface Conversation {

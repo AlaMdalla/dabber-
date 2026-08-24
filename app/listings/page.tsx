@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import SectionHeader from "@/components/ui/SectionHeader";
 import ListingCard from "@/components/ui/ListingCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingWithOwner } from "@/lib/supabase/types";
+
+export const metadata: Metadata = {
+  title: "Toutes les annonces de location",
+  description:
+    "Parcourez toutes les annonces de matériel et équipements à louer en Tunisie : audiovisuel, événementiel, camping, mode et plus.",
+  alternates: {
+    canonical: "/listings",
+  },
+};
 
 function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
