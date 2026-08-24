@@ -10,6 +10,9 @@ import { describeError } from "@/lib/supabase/errorMessage";
 interface StartConversationFormProps {
   listingId: string;
   listingSlug: string;
+  listingName: string;
+  listingPricePerDay: number | null;
+  listingUrl: string;
   sellerId: string;
   sellerName: string;
   sellerWhatsapp?: string | null;
@@ -19,6 +22,9 @@ interface StartConversationFormProps {
 export default function StartConversationForm({
   listingId,
   listingSlug,
+  listingName,
+  listingPricePerDay,
+  listingUrl,
   sellerId,
   sellerName,
   sellerWhatsapp,
@@ -33,9 +39,18 @@ export default function StartConversationForm({
     const trimmed = body.trim();
     if (!trimmed || !sellerWhatsapp) return;
 
+    const priceLabel =
+      listingPricePerDay !== null ? `${listingPricePerDay} DT / jour` : "Prix sur demande";
+    const productInfo = [
+      `📦 ${listingName}`,
+      `💰 ${priceLabel}`,
+      `🔗 ${listingUrl}`,
+    ].join("\n");
+    const fullMessage = `${trimmed}\n\n${productInfo}`;
+
     const digits = sellerWhatsapp.replace(/\D/g, "");
     window.open(
-      `https://wa.me/${digits}?text=${encodeURIComponent(trimmed)}`,
+      `https://wa.me/${digits}?text=${encodeURIComponent(fullMessage)}`,
       "_blank",
       "noopener,noreferrer",
     );

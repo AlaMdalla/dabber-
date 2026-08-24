@@ -204,6 +204,9 @@ export default async function ListingDetailPage({
               <StartConversationForm
                 listingId={listing.id}
                 listingSlug={listing.slug}
+                listingName={listing.name}
+                listingPricePerDay={listing.price_per_day}
+                listingUrl={listingUrl}
                 sellerId={listing.owner_id}
                 sellerName={posterName}
                 sellerWhatsapp={listing.profiles?.whatsapp_number ?? null}

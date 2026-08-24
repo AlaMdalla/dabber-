@@ -67,9 +67,18 @@ export default function MessageThread({
     const trimmed = body.trim();
     if (!trimmed || !otherWhatsappNumber) return;
 
+    const lastShared = [...messages].reverse().find((message) => message.listings);
+    const listing = lastShared?.listings;
+    const productInfo = listing
+      ? `\n\n📦 ${listing.name}\n💰 ${
+          listing.price_per_day !== null ? `${listing.price_per_day} DT / jour` : "Prix sur demande"
+        }\n🔗 ${window.location.origin}/listings/${listing.slug}`
+      : "";
+    const fullMessage = `${trimmed}${productInfo}`;
+
     const digits = otherWhatsappNumber.replace(/\D/g, "");
     window.open(
-      `https://wa.me/${digits}?text=${encodeURIComponent(trimmed)}`,
+      `https://wa.me/${digits}?text=${encodeURIComponent(fullMessage)}`,
       "_blank",
       "noopener,noreferrer",
     );
