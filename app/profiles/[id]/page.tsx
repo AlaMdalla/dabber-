@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, ImageOff, MapPin, User as UserIcon } from "lucide-react";
+import {
+  CalendarDays,
+  ImageOff,
+  MapPin,
+  MessageCircle,
+  User as UserIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, Profile } from "@/lib/supabase/types";
 
@@ -16,30 +22,38 @@ export default async function PublicProfilePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: listings }] = await Promise.all([
+  const [{ data: profile }, { data: listings }, { data: userData }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, created_at")
+      .select("id, full_name, avatar_url, whatsapp_number, created_at")
       .eq("id", id)
-      .single<Pick<Profile, "id" | "full_name" | "avatar_url" | "created_at">>(),
+      .single<
+        Pick<Profile, "id" | "full_name" | "avatar_url" | "whatsapp_number" | "created_at">
+      >(),
     supabase
       .from("listings")
       .select("*")
       .eq("owner_id", id)
       .order("created_at", { ascending: false })
       .returns<Listing[]>(),
+    supabase.auth.getUser(),
   ]);
 
   if (!profile) {
     notFound();
   }
 
+  const isOwnProfile = userData.user?.id === profile.id;
   const displayName = profile.full_name ?? "Utilisateur Dabber";
   const joinedAt = new Intl.DateTimeFormat("fr-TN", {
     month: "long",
     year: "numeric",
     timeZone: "Africa/Tunis",
   }).format(new Date(profile.created_at));
+  const whatsappNumber = profile.whatsapp_number?.replace(/\D/g, "");
+  const whatsappMessage = encodeURIComponent(
+    `Bonjour, je vous contacte depuis votre profil Dabber.`,
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
@@ -68,6 +82,18 @@ export default async function PublicProfilePage({
             </p>
           </div>
         </div>
+
+        {!isOwnProfile && whatsappNumber && (
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+          >
+            <MessageCircle className="h-5 w-5" aria-hidden="true" />
+            Contacter sur WhatsApp
+          </a>
+        )}
       </section>
 
       <section className="mt-10">

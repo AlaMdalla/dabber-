@@ -56,41 +56,16 @@ export default function StartConversationForm({
     const supabase = createClient();
 
     try {
-      const { data: existing, error: findError } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("listing_id", listingId)
-        .eq("buyer_id", currentUserId)
-        .maybeSingle<{ id: string }>();
+      const { data: conversationId, error: startError } = await supabase.rpc(
+        "start_conversation",
+        {
+          p_other_user_id: sellerId,
+          p_body: trimmed,
+          p_listing_id: listingId,
+        },
+      );
 
-      if (findError) throw findError;
-
-      let conversationId = existing?.id;
-
-      if (!conversationId) {
-        const { data: created, error: createError } = await supabase
-          .from("conversations")
-          .insert({
-            listing_id: listingId,
-            buyer_id: currentUserId,
-            seller_id: sellerId,
-          })
-          .select("id")
-          .single<{ id: string }>();
-
-        if (createError) throw createError;
-        conversationId = created.id;
-      }
-
-      const { error: messageError } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_id: currentUserId,
-          body: trimmed,
-        });
-
-      if (messageError) throw messageError;
+      if (startError) throw startError;
 
       router.push(`/messages/${conversationId}`);
     } catch (err) {

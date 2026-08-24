@@ -32,9 +32,8 @@ export interface ListingWithOwner extends Listing {
 
 export interface Conversation {
   id: string;
-  listing_id: string;
-  buyer_id: string;
-  seller_id: string;
+  user_a_id: string;
+  user_b_id: string;
   created_at: string;
 }
 
@@ -44,12 +43,21 @@ export interface Message {
   sender_id: string;
   recipient_id: string;
   body: string;
+  listing_id: string | null;
   created_at: string;
   read_at: string | null;
 }
 
+export type SharedListing = Pick<
+  Listing,
+  "name" | "slug" | "image_url" | "price_per_day" | "description"
+>;
+
+export interface MessageWithListing extends Message {
+  listings: SharedListing | null;
+}
+
 export interface ConversationWithDetails extends Conversation {
-  listings: Pick<Listing, "name" | "slug" | "image_url"> | null;
-  buyer: Pick<Profile, "full_name" | "avatar_url"> | null;
-  seller: Pick<Profile, "full_name" | "avatar_url"> | null;
+  user_a: Pick<Profile, "full_name" | "avatar_url"> | null;
+  user_b: Pick<Profile, "full_name" | "avatar_url"> | null;
 }

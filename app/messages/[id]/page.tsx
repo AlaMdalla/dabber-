@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, ImageOff, User as UserIcon } from "lucide-react";
+import { ArrowLeft, MessageCircle, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { ConversationWithDetails, Message } from "@/lib/supabase/types";
+import type { ConversationWithDetails, MessageWithListing, Profile } from "@/lib/supabase/types";
 import MessageThread from "@/components/messages/MessageThread";
 
 export default async function ConversationPage({
@@ -22,29 +22,35 @@ export default async function ConversationPage({
   const { data: conversation } = await supabase
     .from("conversations")
     .select(
-      "*, listings(name, slug, image_url), buyer:profiles!conversations_buyer_id_fkey(full_name, avatar_url), seller:profiles!conversations_seller_id_fkey(full_name, avatar_url)"
+      "*, user_a:profiles!conversations_user_a_id_fkey(full_name, avatar_url, whatsapp_number), user_b:profiles!conversations_user_b_id_fkey(full_name, avatar_url, whatsapp_number)"
     )
     .eq("id", id)
-    .single<ConversationWithDetails>();
+    .single<
+      ConversationWithDetails & {
+        user_a: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
+        user_b: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
+      }
+    >();
 
   if (!conversation) {
     notFound();
   }
 
-  if (conversation.buyer_id !== user.id && conversation.seller_id !== user.id) {
+  if (conversation.user_a_id !== user.id && conversation.user_b_id !== user.id) {
     notFound();
   }
 
   const { data: messages } = await supabase
     .from("messages")
-    .select("*")
+    .select("*, listings(name, slug, image_url, price_per_day, description)")
     .eq("conversation_id", id)
     .order("created_at", { ascending: true })
-    .returns<Message[]>();
+    .returns<MessageWithListing[]>();
 
-  const isBuyer = conversation.buyer_id === user.id;
-  const other = isBuyer ? conversation.seller : conversation.buyer;
-  const otherId = isBuyer ? conversation.seller_id : conversation.buyer_id;
+  const isUserA = conversation.user_a_id === user.id;
+  const other = isUserA ? conversation.user_b : conversation.user_a;
+  const otherId = isUserA ? conversation.user_b_id : conversation.user_a_id;
+  const whatsappNumber = other?.whatsapp_number?.replace(/\D/g, "");
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-3xl flex-col px-4 sm:px-6 lg:px-8">
@@ -79,28 +85,18 @@ export default async function ConversationPage({
           >
             {other?.full_name ?? "Utilisateur Dabber"}
           </Link>
-          {conversation.listings && (
-            <Link
-              href={`/listings/${conversation.listings.slug}`}
-              className="truncate text-xs text-muted underline underline-offset-2 hover:text-ink"
-            >
-              {conversation.listings.name}
-            </Link>
-          )}
         </div>
-        <div className="relative hidden h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-subtle text-muted sm:flex">
-          {conversation.listings?.image_url ? (
-            <Image
-              src={conversation.listings.image_url}
-              alt=""
-              fill
-              sizes="36px"
-              className="object-cover"
-            />
-          ) : (
-            <ImageOff className="h-4 w-4" aria-hidden="true" />
-          )}
-        </div>
+        {whatsappNumber && (
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Contacter sur WhatsApp"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          </a>
+        )}
       </div>
 
       <MessageThread

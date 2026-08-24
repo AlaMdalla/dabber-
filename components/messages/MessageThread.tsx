@@ -1,14 +1,53 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
-import type { Message } from "@/lib/supabase/types";
+import type { Message, MessageWithListing, SharedListing } from "@/lib/supabase/types";
 
 interface MessageThreadProps {
   conversationId: string;
   currentUserId: string;
-  initialMessages: Message[];
+  initialMessages: MessageWithListing[];
+}
+
+function SharedListingCard({ listing }: { listing: SharedListing }) {
+  return (
+    <Link
+      href={`/listings/${listing.slug}`}
+      className="flex w-64 max-w-full items-center gap-3 rounded-xl border border-border bg-white p-2.5 transition-colors hover:bg-subtle"
+    >
+      <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-subtle text-muted">
+        {listing.image_url ? (
+          <Image
+            src={listing.image_url}
+            alt=""
+            fill
+            sizes="56px"
+            className="object-cover"
+          />
+        ) : (
+          <ImageOff className="h-5 w-5" aria-hidden="true" />
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-ink">{listing.name}</p>
+        {listing.description && (
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+            {listing.description}
+          </p>
+        )}
+        <p className="mt-0.5 text-xs font-medium text-ink">
+          {listing.price_per_day !== null
+            ? `${listing.price_per_day} DT / jour`
+            : "Prix sur demande"}
+        </p>
+      </div>
+    </Link>
+  );
 }
 
 export default function MessageThread({
@@ -16,7 +55,7 @@ export default function MessageThread({
   currentUserId,
   initialMessages,
 }: MessageThreadProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<MessageWithListing[]>(initialMessages);
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +95,26 @@ export default function MessageThread({
           setMessages((current) =>
             current.some((message) => message.id === incoming.id)
               ? current
-              : [...current, incoming]
+              : [...current, { ...incoming, listings: null }]
           );
+
+          if (incoming.listing_id) {
+            void supabase
+              .from("listings")
+              .select("name, slug, image_url, price_per_day, description")
+              .eq("id", incoming.listing_id)
+              .single<SharedListing>()
+              .then(({ data: listing }) => {
+                if (!listing) return;
+                setMessages((current) =>
+                  current.map((message) =>
+                    message.id === incoming.id
+                      ? { ...message, listings: listing }
+                      : message
+                  )
+                );
+              });
+          }
 
           if (incoming.recipient_id === currentUserId) {
             void supabase
@@ -115,7 +172,7 @@ export default function MessageThread({
       setMessages((current) =>
         current.some((message) => message.id === data.id)
           ? current
-          : [...current, data]
+          : [...current, { ...data, listings: null }]
       );
     }
   }
@@ -128,8 +185,9 @@ export default function MessageThread({
           return (
             <div
               key={message.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col gap-1.5 ${isMine ? "items-end" : "items-start"}`}
             >
+              {message.listings && <SharedListingCard listing={message.listings} />}
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
                   isMine ? "bg-accent text-ink" : "bg-subtle text-ink"
