@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ImageOff, MapPin, MessageCircle, User as UserIcon } from "lucide-react";
+import { ImageOff, MapPin, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingWithOwner } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
@@ -82,10 +82,6 @@ export default async function ListingDetailPage({
   const host = headersList.get("host");
   const protocol = host?.startsWith("localhost") ? "http" : "https";
   const listingUrl = `${protocol}://${host}/listings/${listing.slug}`;
-  const whatsappNumber = listing.profiles?.whatsapp_number?.replace(/\D/g, "");
-  const whatsappMessage = encodeURIComponent(
-    `Bonjour, je suis intéressé(e) par votre annonce « ${listing.name} » sur Dabber : ${listingUrl}`,
-  );
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -204,23 +200,13 @@ export default async function ListingDetailPage({
           )}
 
           {!isOwner && (
-            <div className="mt-4 flex flex-col gap-3">
-              {whatsappNumber && (
-                <a
-                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
-                >
-                  <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                  Contacter sur WhatsApp
-                </a>
-              )}
+            <div className="mt-4">
               <StartConversationForm
                 listingId={listing.id}
                 listingSlug={listing.slug}
                 sellerId={listing.owner_id}
                 sellerName={posterName}
+                sellerWhatsapp={listing.profiles?.whatsapp_number ?? null}
                 currentUserId={userData.user?.id ?? null}
               />
             </div>

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 
@@ -11,6 +12,7 @@ interface StartConversationFormProps {
   listingSlug: string;
   sellerId: string;
   sellerName: string;
+  sellerWhatsapp?: string | null;
   currentUserId: string | null;
 }
 
@@ -19,12 +21,25 @@ export default function StartConversationForm({
   listingSlug,
   sellerId,
   sellerName,
+  sellerWhatsapp,
   currentUserId,
 }: StartConversationFormProps) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleSendWhatsapp() {
+    const trimmed = body.trim();
+    if (!trimmed || !sellerWhatsapp) return;
+
+    const digits = sellerWhatsapp.replace(/\D/g, "");
+    window.open(
+      `https://wa.me/${digits}?text=${encodeURIComponent(trimmed)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
 
   if (!currentUserId) {
     return (
@@ -93,13 +108,26 @@ export default function StartConversationForm({
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={isSending || !body.trim()}
-          className="h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
-        >
-          {isSending ? "Envoi…" : "Envoyer le message"}
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="submit"
+            disabled={isSending || !body.trim()}
+            className="h-11 flex-1 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+          >
+            {isSending ? "Envoi…" : "Envoyer le message"}
+          </button>
+          {sellerWhatsapp && (
+            <button
+              type="button"
+              onClick={handleSendWhatsapp}
+              disabled={!body.trim()}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 disabled:opacity-60"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Envoyer via WhatsApp
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

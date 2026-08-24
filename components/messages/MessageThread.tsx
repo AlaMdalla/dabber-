@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ImageOff } from "lucide-react";
+import { ImageOff, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import type { Message, MessageWithListing, SharedListing } from "@/lib/supabase/types";
@@ -12,6 +12,7 @@ interface MessageThreadProps {
   conversationId: string;
   currentUserId: string;
   initialMessages: MessageWithListing[];
+  otherWhatsappNumber?: string | null;
 }
 
 function SharedListingCard({ listing }: { listing: SharedListing }) {
@@ -54,12 +55,25 @@ export default function MessageThread({
   conversationId,
   currentUserId,
   initialMessages,
+  otherWhatsappNumber,
 }: MessageThreadProps) {
   const [messages, setMessages] = useState<MessageWithListing[]>(initialMessages);
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  function handleSendWhatsapp() {
+    const trimmed = body.trim();
+    if (!trimmed || !otherWhatsappNumber) return;
+
+    const digits = otherWhatsappNumber.replace(/\D/g, "");
+    window.open(
+      `https://wa.me/${digits}?text=${encodeURIComponent(trimmed)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -219,6 +233,17 @@ export default function MessageThread({
         >
           Envoyer
         </button>
+        {otherWhatsappNumber && (
+          <button
+            type="button"
+            onClick={handleSendWhatsapp}
+            disabled={!body.trim()}
+            aria-label="Envoyer ce message via WhatsApp"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 disabled:opacity-60"
+          >
+            <MessageCircle className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
       </form>
       {error && (
         <p role="alert" className="px-4 pb-3 text-sm font-medium text-red-600">

@@ -103,6 +103,7 @@ export default async function ConversationPage({
         conversationId={conversation.id}
         currentUserId={user.id}
         initialMessages={messages ?? []}
+        otherWhatsappNumber={whatsappNumber}
       />
     </div>
   );
