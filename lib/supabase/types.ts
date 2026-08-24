@@ -42,8 +42,10 @@ export interface Message {
   id: string;
   conversation_id: string;
   sender_id: string;
+  recipient_id: string;
   body: string;
   created_at: string;
+  read_at: string | null;
 }
 
 export interface ConversationWithDetails extends Conversation {

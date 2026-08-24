@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ImageOff, User as UserIcon } from "lucide-react";
+import { ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, Profile } from "@/lib/supabase/types";
 import ProfileForm from "@/components/account/ProfileForm";
@@ -33,9 +33,6 @@ export default async function AccountPage() {
       .returns<Listing[]>(),
   ]);
 
-  const displayName = profile?.full_name || user.email || "Utilisateur";
-  const avatarUrl = profile?.avatar_url;
-
   return (
     <div className="mx-auto flex max-w-2xl flex-1 flex-col px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight text-ink">
@@ -43,25 +40,7 @@ export default async function AccountPage() {
       </h1>
 
       <div className="mt-8 rounded-2xl border border-border bg-white p-6">
-        <div className="flex items-center gap-4">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={displayName}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            ) : (
-              <UserIcon className="h-7 w-7" aria-hidden="true" />
-            )}
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-ink">{displayName}</h2>
-            <p className="mt-0.5 text-sm text-muted">{user.email}</p>
-          </div>
-        </div>
+        <p className="text-sm text-muted">{user.email}</p>
 
         {profile && <ProfileForm profile={profile} />}
       </div>

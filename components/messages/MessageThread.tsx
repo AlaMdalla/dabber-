@@ -24,6 +24,23 @@ export default function MessageThread({
 
   useEffect(() => {
     const supabase = createClient();
+
+    async function markAsRead() {
+      const { error: readError } = await supabase.rpc(
+        "mark_conversation_read",
+        { p_conversation_id: conversationId },
+      );
+
+      if (!readError) {
+        window.dispatchEvent(new Event("dabber:messages-read"));
+      }
+    }
+
+    void markAsRead();
+  }, [conversationId]);
+
+  useEffect(() => {
+    const supabase = createClient();
     const channel = supabase
       .channel(`conversation-${conversationId}`)
       .on(
@@ -41,6 +58,18 @@ export default function MessageThread({
               ? current
               : [...current, incoming]
           );
+
+          if (incoming.recipient_id === currentUserId) {
+            void supabase
+              .rpc("mark_conversation_read", {
+                p_conversation_id: conversationId,
+              })
+              .then(({ error: readError }) => {
+                if (!readError) {
+                  window.dispatchEvent(new Event("dabber:messages-read"));
+                }
+              });
+          }
         }
       )
       .subscribe();
@@ -48,7 +77,7 @@ export default function MessageThread({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

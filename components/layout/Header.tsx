@@ -17,6 +17,11 @@ const navLinks = [
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -27,16 +32,89 @@ export default function Header() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) {
+        setUnreadCount(0);
+        setProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+
+    async function refreshProfile() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", user!.id)
+        .single();
+
+      setProfile(data ?? null);
+    }
+
+    void refreshProfile();
+
+    const handleProfileUpdated = () => void refreshProfile();
+    window.addEventListener("dabber:profile-updated", handleProfileUpdated);
+
+    return () => {
+      window.removeEventListener("dabber:profile-updated", handleProfileUpdated);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+
+    async function refreshUnreadCount() {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user!.id)
+        .is("read_at", null);
+
+      setUnreadCount(count ?? 0);
+    }
+
+    void refreshUnreadCount();
+
+    const channel = supabase
+      .channel(`message-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => setUnreadCount((count) => count + 1),
+      )
+      .subscribe();
+
+    const handleMessagesRead = () => void refreshUnreadCount();
+    window.addEventListener("dabber:messages-read", handleMessagesRead);
+
+    return () => {
+      window.removeEventListener("dabber:messages-read", handleMessagesRead);
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setIsMenuOpen(false);
   }
+
+  const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
+  const displayName =
+    profile?.full_name ?? user?.user_metadata?.full_name ?? "Mon compte";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
@@ -65,19 +143,24 @@ export default function Header() {
             <>
               <Link
                 href="/messages"
-                aria-label="Messages"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                aria-label={unreadCount > 0 ? `Messages, ${unreadCount} non lus` : "Messages"}
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/account"
                 className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
                 <span className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
-                  {user.user_metadata?.avatar_url ? (
+                  {avatarUrl ? (
                     <Image
-                      src={user.user_metadata.avatar_url}
+                      src={avatarUrl}
                       alt=""
                       fill
                       sizes="28px"
@@ -87,7 +170,7 @@ export default function Header() {
                     <UserIcon className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                 </span>
-                {user.user_metadata?.full_name ?? "Mon compte"}
+                {displayName}
               </Link>
               <button
                 type="button"
@@ -156,14 +239,14 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Messages
+                  Messages{unreadCount > 0 ? ` (${unreadCount})` : ""}
                 </Link>
                 <Link
                   href="/account"
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  {user.user_metadata?.full_name ?? "Mon compte"}
+                  {displayName}
                 </Link>
                 <button
                   type="button"

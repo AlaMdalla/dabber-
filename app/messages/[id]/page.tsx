@@ -44,6 +44,7 @@ export default async function ConversationPage({
 
   const isBuyer = conversation.buyer_id === user.id;
   const other = isBuyer ? conversation.seller : conversation.buyer;
+  const otherId = isBuyer ? conversation.seller_id : conversation.buyer_id;
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-3xl flex-col px-4 sm:px-6 lg:px-8">
@@ -54,7 +55,11 @@ export default async function ConversationPage({
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </Link>
-        <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
+        <Link
+          href={`/profiles/${otherId}`}
+          aria-label={`Voir le profil de ${other?.full_name ?? "cet utilisateur"}`}
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
           {other?.avatar_url ? (
             <Image
               src={other.avatar_url}
@@ -66,11 +71,14 @@ export default async function ConversationPage({
           ) : (
             <UserIcon className="h-4 w-4" aria-hidden="true" />
           )}
-        </div>
+        </Link>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink">
+          <Link
+            href={`/profiles/${otherId}`}
+            className="block truncate text-sm font-semibold text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
             {other?.full_name ?? "Utilisateur Dabber"}
-          </p>
+          </Link>
           {conversation.listings && (
             <Link
               href={`/listings/${conversation.listings.slug}`}
