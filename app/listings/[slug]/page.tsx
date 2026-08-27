@@ -10,6 +10,7 @@ import { categories } from "@/data/categories";
 import { SITE_URL } from "@/lib/constants";
 import { headers } from "next/headers";
 import DeleteListingButton from "@/components/listings/DeleteListingButton";
+import AvailabilityToggle from "@/components/listings/AvailabilityToggle";
 import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
 import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
 import ListingGallery from "@/components/listings/ListingGallery";
@@ -206,15 +207,19 @@ export default async function ListingDetailPage({
                 ? t("common.priceDay", { price: listing.price_per_day })
                 : t("common.priceRequest")}
             </span>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                isAvailable
-                  ? "bg-green-100 text-green-800"
-                  : "bg-amber-100 text-amber-800"
-              }`}
-            >
-              {isAvailable ? t("common.available") : t("common.toConfirm")}
-            </span>
+            {isOwner ? (
+              <AvailabilityToggle listingId={listing.id} availability={listing.availability} />
+            ) : (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  isAvailable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {isAvailable ? t("common.available") : t("common.toConfirm")}
+              </span>
+            )}
           </div>
 
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-white p-4">
