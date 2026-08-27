@@ -5,7 +5,7 @@ import Link from "@/components/i18n/LocalizedLink";
 import { notFound } from "next/navigation";
 import { MapPin, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { ListingWithOwner } from "@/lib/supabase/types";
+import type { ListingCommentWithAuthor, ListingWithOwner } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
 import { SITE_URL } from "@/lib/constants";
 import { headers } from "next/headers";
@@ -15,6 +15,7 @@ import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
 import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
 import ListingGallery from "@/components/listings/ListingGallery";
 import StartConversationForm from "@/components/messages/StartConversationForm";
+import ListingComments from "@/components/listings/ListingComments";
 import { getServerI18n, getLocale } from "@/lib/i18n/server";
 import { locales, defaultLocale, localizePath } from "@/lib/i18n/config";
 import { localizeCategory } from "@/lib/i18n/categories";
@@ -90,6 +91,13 @@ export default async function ListingDetailPage({
   if (!listing) {
     notFound();
   }
+
+  const { data: comments } = await (await createClient())
+    .from("listing_comments")
+    .select("*, profiles(full_name, avatar_url)")
+    .eq("listing_id", listing.id)
+    .order("created_at", { ascending: true })
+    .returns<ListingCommentWithAuthor[]>();
 
   const isAvailable = listing.availability === "disponible";
   const isOwner = userData.user?.id === listing.owner_id;
@@ -288,7 +296,14 @@ export default async function ListingDetailPage({
             />
           </div>
         </div>
+
       </div>
+
+      <ListingComments
+        listingId={listing.id}
+        initialComments={comments ?? []}
+        currentUserId={userData.user?.id ?? null}
+      />
     </div>
   );
 }

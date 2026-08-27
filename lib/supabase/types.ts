@@ -40,6 +40,19 @@ export interface ListingWithOwner extends Listing {
   listing_images?: ListingImage[];
 }
 
+export interface ListingComment {
+  id: string;
+  listing_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListingCommentWithAuthor extends ListingComment {
+  profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
+}
+
 /** Columns ListingCard renders. Feed queries select only these instead of `*`. */
 export type ListingCardData = Pick<
   Listing,
@@ -165,4 +178,16 @@ export type AdminListingRow = Pick<
 export interface AdminReservationRow extends Reservation {
   listings: Pick<Listing, "id" | "name" | "slug" | "owner_id"> | null;
   profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
+}
+
+export interface AdminRow {
+  user_id: string;
+  created_at: string;
+}
+
+export interface AdminBanRow {
+  user_id: string;
+  banned_by: string | null;
+  reason: string | null;
+  created_at: string;
 }

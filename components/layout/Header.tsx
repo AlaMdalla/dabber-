@@ -28,6 +28,7 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -43,6 +44,7 @@ export default function Header() {
         setNotificationUnreadCount(0);
         setProfile(null);
         setIsAdmin(false);
+        setIsBanned(false);
       }
     });
 
@@ -54,6 +56,7 @@ export default function Header() {
 
     const supabase = createClient();
     supabase.rpc("is_admin").then(({ data }) => setIsAdmin(Boolean(data)));
+    supabase.rpc("is_banned").then(({ data }) => setIsBanned(Boolean(data)));
   }, [user]);
 
   useEffect(() => {
@@ -322,6 +325,14 @@ export default function Header() {
           )}
         </button>
       </div>
+
+      {isBanned && (
+        <div className="border-t border-red-200 bg-red-50 px-4 py-2.5 text-center text-sm text-red-800 sm:px-6 lg:px-8">
+          <span className="font-semibold">{t("admin.bannedBannerTitle")}</span>
+          <span className="mx-1">·</span>
+          {t("admin.bannedBannerDescription")}
+        </div>
+      )}
 
       {isMenuOpen && (
         <nav

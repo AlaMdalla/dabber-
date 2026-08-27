@@ -3,7 +3,8 @@ import Link from "@/components/i18n/LocalizedLink";
 import { User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import EmptyState from "@/components/ui/EmptyState";
-import type { AdminUserRow } from "@/lib/supabase/types";
+import AdminUserActions from "@/components/admin/AdminUserActions";
+import type { AdminBanRow, AdminRow, AdminUserRow } from "@/lib/supabase/types";
 import { getServerI18n, getLocale } from "@/lib/i18n/server";
 
 function firstValue(value: string | string[] | undefined) {
@@ -29,7 +30,22 @@ export default async function AdminUsersPage({
     usersQuery = usersQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%`);
   }
 
-  const { data: users } = await usersQuery.returns<AdminUserRow[]>();
+  const [
+    { data: users },
+    { data: admins },
+    { data: bannedUsers },
+    {
+      data: { user: currentUser },
+    },
+  ] = await Promise.all([
+    usersQuery.returns<AdminUserRow[]>(),
+    supabase.from("admins").select("user_id, created_at").returns<AdminRow[]>(),
+    supabase.from("banned_users").select("user_id, banned_by, reason, created_at").returns<AdminBanRow[]>(),
+    supabase.auth.getUser(),
+  ]);
+
+  const adminIds = new Set((admins ?? []).map((admin) => admin.user_id));
+  const bannedIds = new Set((bannedUsers ?? []).map((ban) => ban.user_id));
 
   return (
     <div>
@@ -52,11 +68,17 @@ export default async function AdminUsersPage({
               timeZone: "Africa/Tunis",
             }).format(new Date(user.created_at));
 
+            const userIsAdmin = adminIds.has(user.id);
+            const userIsBanned = bannedIds.has(user.id);
+
             return (
-              <li key={user.id}>
+              <li
+                key={user.id}
+                className="flex items-center gap-4 rounded-2xl border border-border bg-white p-4"
+              >
                 <Link
                   href={`/profiles/${user.id}`}
-                  className="flex items-center gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="flex min-w-0 flex-1 items-center gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
                     {user.avatar_url ? (
@@ -72,17 +94,33 @@ export default async function AdminUsersPage({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink">
+                    <p className="flex items-center gap-2 truncate text-sm font-semibold text-ink">
                       {user.full_name ?? t("listing.dabberUser")}
+                      {userIsAdmin && (
+                        <span className="shrink-0 rounded-full bg-accent/30 px-2 py-0.5 text-[11px] font-medium text-ink">
+                          {t("admin.adminBadge")}
+                        </span>
+                      )}
+                      {userIsBanned && (
+                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                          {t("admin.bannedBadge")}
+                        </span>
+                      )}
                     </p>
                     <p className="mt-0.5 truncate text-xs text-muted">
                       {user.email ?? user.whatsapp_number ?? "—"}
                     </p>
                   </div>
-                  <p className="shrink-0 text-xs text-muted">
+                  <p className="hidden shrink-0 text-xs text-muted sm:block">
                     {t("profile.memberSince", { date: joinedAt })}
                   </p>
                 </Link>
+                <AdminUserActions
+                  userId={user.id}
+                  isAdmin={userIsAdmin}
+                  isBanned={userIsBanned}
+                  isSelf={user.id === currentUser?.id}
+                />
               </li>
             );
           })}
