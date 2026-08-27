@@ -24,7 +24,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-semibold">2. Données collectées</h2>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-muted">
+          <ul className="mt-2 list-disc space-y-2 ps-5 text-muted">
             <li>
               <span className="font-medium text-ink">
                 Lors de la création de votre compte :
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
           <h2 className="text-base font-semibold">
             3. Comment nous utilisons ces données
           </h2>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-muted">
+          <ul className="mt-2 list-disc space-y-2 ps-5 text-muted">
             <li>Créer et sécuriser votre compte.</li>
             <li>
               Afficher vos annonces publiquement, avec votre nom et votre

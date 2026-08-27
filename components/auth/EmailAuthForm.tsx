@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 interface EmailAuthFormProps {
   next: string;
@@ -12,6 +14,7 @@ interface EmailAuthFormProps {
 type Mode = "sign-in" | "sign-up";
 
 export default function EmailAuthForm({ next }: EmailAuthFormProps) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [fullName, setFullName] = useState("");
@@ -29,7 +32,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
     setMessage(null);
 
     if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      setError(t("auth.passwordMin"));
       return;
     }
 
@@ -55,7 +58,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
 
     if (!fullName.trim()) {
       setIsSubmitting(false);
-      setError("Veuillez saisir votre nom.");
+      setError(t("auth.nameRequired"));
       return;
     }
 
@@ -79,7 +82,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
       router.refresh();
     } else {
       setMessage(
-        "Compte créé. Consultez votre e-mail pour confirmer votre adresse, puis connectez-vous.",
+        t("auth.accountCreated"),
       );
     }
   }
@@ -94,7 +97,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
     setError(null);
     setMessage(null);
     if (!email.trim()) {
-      setError("Saisissez d’abord votre adresse e-mail.");
+      setError(t("auth.emailRequired"));
       return;
     }
 
@@ -103,7 +106,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
       {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(localizePath("/reset-password", locale))}`,
       },
     );
     setIsResetting(false);
@@ -111,7 +114,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
     if (resetError) {
       setError(describeError(resetError));
     } else {
-      setMessage("Consultez votre e-mail pour choisir un nouveau mot de passe.");
+      setMessage(t("auth.resetEmailSent"));
     }
   }
 
@@ -146,7 +149,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
             mode === "sign-in" ? "bg-white text-ink shadow-sm" : "text-muted"
           }`}
         >
-          Connexion
+          {t("auth.signIn")}
         </button>
         <button
           type="button"
@@ -157,7 +160,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
             mode === "sign-up" ? "bg-white text-ink shadow-sm" : "text-muted"
           }`}
         >
-          Créer un compte
+          {t("auth.signUp")}
         </button>
       </div>
 
@@ -178,23 +181,23 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
           <path fill="#EA4335" d="M12 6.01c1.47 0 2.79.5 3.82 1.5l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.96 5.52l3.35 2.62C7.18 7.77 9.39 6.01 12 6.01Z" />
         </svg>
         {isGoogleSubmitting
-          ? "Redirection vers Google…"
+          ? t("auth.googleRedirect")
           : mode === "sign-in"
-            ? "Continuer avec Google"
-            : "S’inscrire avec Google"}
+            ? t("auth.googleContinue")
+            : t("auth.googleSignUp")}
       </button>
 
       <div className="my-5 flex items-center gap-3" aria-hidden="true">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs font-medium text-muted">ou par e-mail</span>
+        <span className="text-xs font-medium text-muted">{t("auth.orEmail")}</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-left">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-start">
         {mode === "sign-up" && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="full-name" className="text-xs font-semibold text-ink">
-              Nom affiché
+              {t("auth.displayName")}
             </label>
             <input
               id="full-name"
@@ -210,7 +213,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="email" className="text-xs font-semibold text-ink">
-            Adresse e-mail
+            {t("auth.email")}
           </label>
           <input
             id="email"
@@ -226,7 +229,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="password" className="text-xs font-semibold text-ink">
-              Mot de passe
+              {t("auth.password")}
             </label>
             {mode === "sign-in" && (
               <button
@@ -235,7 +238,7 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
                 disabled={isResetting}
                 className="text-xs font-medium text-muted underline underline-offset-2 hover:text-ink disabled:opacity-60"
               >
-                {isResetting ? "Envoi…" : "Mot de passe oublié ?"}
+                {isResetting ? t("common.sending") : t("auth.forgotPassword")}
               </button>
             )}
           </div>
@@ -260,10 +263,10 @@ export default function EmailAuthForm({ next }: EmailAuthFormProps) {
           className="h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
         >
           {isSubmitting
-            ? "Veuillez patienter…"
+            ? t("auth.wait")
             : mode === "sign-in"
-              ? "Se connecter"
-              : "Créer mon compte"}
+              ? t("nav.login")
+              : t("auth.createMine")}
         </button>
       </form>
     </div>

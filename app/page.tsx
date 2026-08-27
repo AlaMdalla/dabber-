@@ -8,6 +8,8 @@ import ProfessionalCTA from "@/components/home/ProfessionalCTA";
 import FAQSection from "@/components/home/FAQSection";
 import ListingCardSkeleton from "@/components/ui/ListingCardSkeleton";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import { getLocale } from "@/lib/i18n/server";
+import { localizePath } from "@/lib/i18n/config";
 
 function FeaturedListingsFallback() {
   return (
@@ -25,7 +27,8 @@ function FeaturedListingsFallback() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const locale = await getLocale();
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -33,9 +36,17 @@ export default function Home() {
     url: SITE_URL,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${SITE_URL}/listings?query={search_term_string}`,
+      target: `${SITE_URL}${localizePath("/listings?query={search_term_string}", locale)}`,
       "query-input": "required name=search_term_string",
     },
+  };
+
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    areaServed: "TN",
   };
 
   return (
@@ -43,15 +54,18 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+          __html: JSON.stringify([websiteJsonLd, organizationJsonLd]).replace(
+            /</g,
+            "\\u003c"
+          ),
         }}
       />
       <HeroSection />
+      <HowItWorks />
       <CategorySection />
       <Suspense fallback={<FeaturedListingsFallback />}>
         <FeaturedListings />
       </Suspense>
-      <HowItWorks />
       <TrustSection />
       <FAQSection />
       <ProfessionalCTA />

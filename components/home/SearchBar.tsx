@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, Search } from "lucide-react";
 import { governorates } from "@/data/governorates";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -20,6 +22,7 @@ export default function SearchBar({
   initialEndDate = "",
   showSupportingPoints = false,
 }: SearchBarProps) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [location, setLocation] = useState(initialLocation);
@@ -32,7 +35,7 @@ export default function SearchBar({
     event.preventDefault();
 
     if (startDate && endDate && endDate < startDate) {
-      setError("La date de fin ne peut pas être antérieure à la date de début.");
+      setError(t("search.invalidRange"));
       return;
     }
 
@@ -45,7 +48,7 @@ export default function SearchBar({
     if (endDate) params.set("endDate", endDate);
 
     const search = params.toString();
-    router.push(search ? `/listings?${search}` : "/listings");
+    router.push(localizePath(search ? `/listings?${search}` : "/listings", locale));
   }
 
   return (
@@ -57,7 +60,7 @@ export default function SearchBar({
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="query" className="text-xs font-semibold text-ink">
-            Que cherchez-vous ?
+            {t("search.queryLabel")}
           </label>
           <input
             id="query"
@@ -65,14 +68,14 @@ export default function SearchBar({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Caméra, tente, vidéoprojecteur…"
+            placeholder={t("search.queryPlaceholder")}
             className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="location" className="text-xs font-semibold text-ink">
-            Où ?
+            {t("search.where")}
           </label>
           <select
             id="location"
@@ -81,7 +84,7 @@ export default function SearchBar({
             onChange={(event) => setLocation(event.target.value)}
             className="h-12 rounded-xl border border-border bg-white px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <option value="">Choisir un gouvernorat</option>
+            <option value="">{t("search.governorate")}</option>
             {governorates.map((gov) => (
               <option key={gov} value={gov}>
                 {gov}
@@ -97,13 +100,13 @@ export default function SearchBar({
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold text-ink sm:col-span-2 lg:hidden"
         >
           <CalendarPlus className="h-4 w-4" aria-hidden="true" />
-          {showDates ? "Masquer les dates" : "Ajouter mes dates"}
+          {showDates ? t("search.hideDates") : t("search.addDates")}
         </button>
 
         <div className={`${showDates ? "grid" : "hidden"} grid-cols-2 gap-3 sm:col-span-2 lg:contents`}>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="startDate" className="text-xs font-semibold text-ink">
-              Du
+              {t("search.from")}
             </label>
             <input
               id="startDate"
@@ -117,7 +120,7 @@ export default function SearchBar({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="endDate" className="text-xs font-semibold text-ink">
-              Au
+              {t("search.to")}
             </label>
             <input
               id="endDate"
@@ -136,7 +139,7 @@ export default function SearchBar({
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:col-span-2 lg:col-span-1 lg:w-auto"
         >
           <Search className="h-4 w-4" aria-hidden="true" />
-          Rechercher
+          {t("search.submit")}
         </button>
 
         {error && (
@@ -151,7 +154,7 @@ export default function SearchBar({
 
       {showSupportingPoints && (
         <p className="mt-3 text-center text-xs text-white/55">
-          Particuliers et professionnels · Demande sans paiement en ligne
+          {t("search.support")}
         </p>
       )}
     </div>

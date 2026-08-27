@@ -10,8 +10,11 @@ const nextConfig: NextConfig = {
   images: {
     // The local development network resolves public Supabase URLs through
     // NAT64 addresses, which Next.js treats as private and blocks in its
-    // server-side image optimizer. Load remote images directly instead.
-    unoptimized: true,
+    // server-side image optimizer. Load remote images directly instead —
+    // but only in dev: production hosting doesn't have that NAT64 quirk,
+    // and disabling optimization there would cost real LCP/CWV performance
+    // (no WebP conversion, no responsive srcset) for every listing photo.
+    unoptimized: process.env.NODE_ENV !== "production",
     remotePatterns: [
       {
         protocol: "https",

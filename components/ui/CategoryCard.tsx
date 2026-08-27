@@ -1,13 +1,27 @@
-import Link from "next/link";
+"use client";
+
+import Link from "@/components/i18n/LocalizedLink";
 import { ArrowRight } from "lucide-react";
-import type { Category } from "@/data/categories";
+import { categories, type Category } from "@/data/categories";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizeCategory } from "@/lib/i18n/categories";
 
 interface CategoryCardProps {
-  category: Category;
+  category: Pick<Category, "slug" | "listingCount">;
 }
 
 export default function CategoryCard({ category }: CategoryCardProps) {
-  const Icon = category.icon;
+  const { t } = useI18n();
+  const categoryDefinition = categories.find(
+    (item) => item.slug === category.slug
+  );
+
+  if (!categoryDefinition) {
+    return null;
+  }
+
+  const translatedCategory = localizeCategory(categoryDefinition, t);
+  const Icon = translatedCategory.icon;
 
   return (
     <Link
@@ -25,17 +39,17 @@ export default function CategoryCard({ category }: CategoryCardProps) {
           />
         </div>
         <h3 className="mt-4 text-base font-semibold text-ink">
-          {category.name}
+          {translatedCategory.name}
         </h3>
-        <p className="mt-1 text-sm text-muted">{category.description}</p>
-        {category.note && (
-          <p className="mt-2 text-xs text-muted italic">{category.note}</p>
+        <p className="mt-1 text-sm text-muted">{translatedCategory.description}</p>
+        {translatedCategory.note && (
+          <p className="mt-2 text-xs text-muted italic">{translatedCategory.note}</p>
         )}
       </div>
       <p className="mt-4 text-xs font-medium text-muted">
         {category.listingCount > 0
-          ? `${category.listingCount} annonce${category.listingCount > 1 ? "s" : ""}`
-          : "Explorer la catégorie"}
+          ? t("category.count", { count: category.listingCount })
+          : t("category.explore")}
       </p>
     </Link>
   );

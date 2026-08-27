@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { notFound } from "next/navigation";
 import {
   CalendarDays,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingSummary, Profile } from "@/lib/supabase/types";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "Profil utilisateur",
@@ -20,6 +21,7 @@ export default async function PublicProfilePage({
   params,
 }: PageProps<"/profiles/[id]">) {
   const { id } = await params;
+  const { locale, t } = await getServerI18n();
   const supabase = await createClient();
 
   const [{ data: profile }, { data: listings }, { data: userData }] = await Promise.all([
@@ -44,15 +46,15 @@ export default async function PublicProfilePage({
   }
 
   const isOwnProfile = userData.user?.id === profile.id;
-  const displayName = profile.full_name ?? "Utilisateur Dabber";
-  const joinedAt = new Intl.DateTimeFormat("fr-TN", {
+  const displayName = profile.full_name ?? t("listing.dabberUser");
+  const joinedAt = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
     timeZone: "Africa/Tunis",
   }).format(new Date(profile.created_at));
   const whatsappNumber = profile.whatsapp_number?.replace(/\D/g, "");
   const whatsappMessage = encodeURIComponent(
-    `Bonjour, je vous contacte depuis votre profil Dabber.`,
+    t("messages.profileGreeting"),
   );
 
   return (
@@ -78,7 +80,7 @@ export default async function PublicProfilePage({
             </h1>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
               <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              Membre depuis {joinedAt}
+              {t("profile.memberSince", { date: joinedAt })}
             </p>
           </div>
         </div>
@@ -91,14 +93,14 @@ export default async function PublicProfilePage({
             className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
           >
             <MessageCircle className="h-5 w-5" aria-hidden="true" />
-            Contacter sur WhatsApp
+            {t("messages.contactWhatsapp")}
           </a>
         )}
       </section>
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-ink">
-          Annonces de {displayName}
+          {t("profile.listings", { name: displayName })}
         </h2>
 
         {listings && listings.length > 0 ? (
@@ -132,8 +134,8 @@ export default async function PublicProfilePage({
                     </p>
                     <p className="mt-2 text-sm font-medium text-ink">
                       {listing.price_per_day !== null
-                        ? `${listing.price_per_day} DT / jour`
-                        : "Prix sur demande"}
+                        ? t("common.priceDay", { price: listing.price_per_day })
+                        : t("common.priceRequest")}
                     </p>
                   </div>
                 </Link>
@@ -142,7 +144,7 @@ export default async function PublicProfilePage({
           </ul>
         ) : (
           <p className="mt-4 rounded-2xl border border-border bg-subtle p-6 text-sm text-muted">
-            Cet utilisateur n&apos;a aucune annonce active.
+            {t("profile.noListings")}
           </p>
         )}
       </section>

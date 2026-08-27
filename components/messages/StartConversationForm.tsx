@@ -2,10 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 interface StartConversationFormProps {
   listingId: string;
@@ -30,6 +32,7 @@ export default function StartConversationForm({
   sellerWhatsapp,
   currentUserId,
 }: StartConversationFormProps) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -40,7 +43,7 @@ export default function StartConversationForm({
     if (!trimmed || !sellerWhatsapp) return;
 
     const priceLabel =
-      listingPricePerDay !== null ? `${listingPricePerDay} DT / jour` : "Prix sur demande";
+      listingPricePerDay !== null ? t("common.priceDay", { price: listingPricePerDay }) : t("common.priceRequest");
     const productInfo = [
       `📦 ${listingName}`,
       `💰 ${priceLabel}`,
@@ -60,16 +63,16 @@ export default function StartConversationForm({
     return (
       <div className="rounded-2xl border border-border bg-white p-5">
         <h3 className="text-sm font-semibold text-ink">
-          Contacter {sellerName}
+          {t("messages.contact", { name: sellerName })}
         </h3>
         <p className="mt-1 text-xs text-muted">
-          Connectez-vous pour envoyer un message au vendeur.
+          {t("messages.loginDescription")}
         </p>
         <Link
           href={`/login?next=/listings/${listingSlug}`}
           className="mt-4 flex h-11 items-center justify-center rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
-          Se connecter
+          {t("nav.login")}
         </Link>
       </div>
     );
@@ -97,7 +100,7 @@ export default function StartConversationForm({
 
       if (startError) throw startError;
 
-      router.push(`/messages/${conversationId}`);
+      router.push(localizePath(`/messages/${conversationId}`, locale));
     } catch (err) {
       console.error("[StartConversationForm] failed:", err);
       setError(describeError(err));
@@ -108,14 +111,14 @@ export default function StartConversationForm({
   return (
     <div className="rounded-2xl border border-border bg-white p-5">
       <h3 className="text-sm font-semibold text-ink">
-        Contacter {sellerName}
+        {t("messages.contact", { name: sellerName })}
       </h3>
       <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
         <textarea
           rows={3}
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Bonjour, je suis intéressé(e) par votre annonce…"
+          placeholder={t("messages.interested")}
           className="rounded-xl border border-border px-3.5 py-3 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
         {error && (
@@ -129,7 +132,7 @@ export default function StartConversationForm({
             disabled={isSending || !body.trim()}
             className="h-11 flex-1 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
           >
-            {isSending ? "Envoi…" : "Envoyer le message"}
+            {isSending ? t("common.sending") : t("messages.sendMessage")}
           </button>
           {sellerWhatsapp && (
             <button
@@ -139,7 +142,7 @@ export default function StartConversationForm({
               className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 disabled:opacity-60"
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              Envoyer via WhatsApp
+              {t("messages.viaWhatsapp")}
             </button>
           )}
         </div>

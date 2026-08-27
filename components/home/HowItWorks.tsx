@@ -1,33 +1,21 @@
-import { Search, CalendarRange, BellRing } from "lucide-react";
+import Link from "@/components/i18n/LocalizedLink";
+import { ArrowRight, Camera, CalendarCheck, Send } from "lucide-react";
+import { getServerI18n } from "@/lib/i18n/server";
 
-const steps = [
-  {
-    icon: Search,
-    title: "Cherchez",
-    description:
-      "Indiquez ce que vous cherchez, votre région et les dates souhaitées.",
-  },
-  {
-    icon: CalendarRange,
-    title: "Choisissez vos dates",
-    description:
-      "Consultez le calendrier de l’annonce et sélectionnez votre période de location.",
-  },
-  {
-    icon: BellRing,
-    title: "Recevez la réponse",
-    description:
-      "Le propriétaire accepte ou refuse. Vous suivez la réponse et votre réservation depuis votre compte.",
-  },
-];
+export default async function HowItWorks() {
+  const { t } = await getServerI18n();
+  const steps = [
+    { icon: Camera, title: t("home.how.step1.title"), description: t("home.how.step1.description") },
+    { icon: Send, title: t("home.how.step2.title"), description: t("home.how.step2.description") },
+    { icon: CalendarCheck, title: t("home.how.step3.title"), description: t("home.how.step3.description") },
+  ];
 
-export default function HowItWorks() {
   return (
     <section id="comment-ca-marche" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto max-w-2xl text-center">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Simple par conception</p>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{t("home.how.eyebrow")}</p>
         <h2 className="mt-3 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-          De votre besoin à votre demande, en trois étapes.
+          {t("home.how.title")}
         </h2>
       </div>
 
@@ -50,6 +38,17 @@ export default function HowItWorks() {
           </div>
         ))}
       </div>
+
+      <p className="mt-12 text-center text-sm text-muted">
+        {t("home.how.renterQuestion")}{" "}
+        <Link
+          href="/listings"
+          className="inline-flex items-center gap-1 font-semibold text-ink underline underline-offset-4 hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-md"
+        >
+          {t("home.how.viewListings")}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      </p>
     </section>
   );
 }

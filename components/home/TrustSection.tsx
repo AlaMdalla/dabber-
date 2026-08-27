@@ -1,42 +1,27 @@
 import { UserRound, MapPinned, CalendarCheck, MessageCircle } from "lucide-react";
+import { getServerI18n } from "@/lib/i18n/server";
 
-const points = [
-  {
-    icon: UserRound,
-    title: "Vous savez à qui vous parlez",
-    text: "Le profil du propriétaire accompagne chaque annonce.",
-  },
-  {
-    icon: MapPinned,
-    title: "Vous cherchez au bon endroit",
-    text: "Chaque offre indique son gouvernorat pour éviter les recherches inutiles.",
-  },
-  {
-    icon: CalendarCheck,
-    title: "Vos dates sont au centre",
-    text: "Le calendrier distingue les périodes libres, demandées et confirmées.",
-  },
-  {
-    icon: MessageCircle,
-    title: "La réponse reste visible",
-    text: "Notifications, statut de réservation et messagerie restent accessibles dans votre compte.",
-  },
-];
+export default async function TrustSection() {
+  const { t } = await getServerI18n();
+  const points = [
+    { icon: UserRound, title: t("home.trust.1.title"), text: t("home.trust.1.text") },
+    { icon: MapPinned, title: t("home.trust.2.title"), text: t("home.trust.2.text") },
+    { icon: CalendarCheck, title: t("home.trust.3.title"), text: t("home.trust.3.text") },
+    { icon: MessageCircle, title: t("home.trust.4.title"), text: t("home.trust.4.text") },
+  ];
 
-export default function TrustSection() {
   return (
     <section id="confiance" className="bg-ink py-16 text-white sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-5 lg:grid-cols-[1fr_1.35fr] lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Moins d’incertitude</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">{t("home.trust.eyebrow")}</p>
             <h2 className="mt-3 max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
-              Les informations utiles avant de vous déplacer.
+              {t("home.trust.title")}
             </h2>
           </div>
           <p className="max-w-2xl text-base leading-7 text-white/65 lg:justify-self-end">
-            Dabber ne remplace pas l’accord entre utilisateurs. La plateforme
-            vous aide à trouver, demander et suivre une location avec un historique clair.
+            {t("home.trust.description")}
           </p>
         </div>
 

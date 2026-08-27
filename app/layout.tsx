@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import LocaleProvider from "@/components/i18n/LocaleProvider";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,42 +18,48 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Dabber — Trouvez du matériel à louer en Tunisie",
-    template: `%s — ${SITE_NAME}`,
-  },
-  description:
-    "Louez du matériel près de chez vous en Tunisie. Consultez les disponibilités, choisissez vos dates et suivez votre demande sur Dabber.",
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: "Dabber — Trouvez du matériel à louer en Tunisie",
-    description:
-      "Trouvez du matériel à louer en Tunisie, choisissez vos dates et envoyez votre demande au propriétaire.",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    locale: "fr_FR",
-    type: "website",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const dictionary = getDictionary(locale);
+  const title = dictionary["meta.home.title"];
+  const description = dictionary["meta.home.description"];
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: title, template: `%s — ${SITE_NAME}` },
+    description,
+    alternates: {
+      canonical: `/${locale}`,
+      languages: { fr: "/fr", ar: "/ar", en: "/en", "x-default": "/fr" },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/${locale}`,
+      siteName: SITE_NAME,
+      locale: locale === "fr" ? "fr_FR" : locale === "ar" ? "ar_TN" : "en_US",
+      type: "website",
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+  const dictionary = getDictionary(locale);
+
   return (
     <html
-      lang="fr"
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header />
-        <main className="flex flex-1 flex-col">{children}</main>
-        <Footer />
+        <LocaleProvider locale={locale} dictionary={dictionary}>
+          <Header />
+          <main className="flex flex-1 flex-col">{children}</main>
+          <Footer />
+        </LocaleProvider>
       </body>
     </html>
   );

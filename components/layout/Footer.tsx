@@ -1,6 +1,10 @@
-import Link from "next/link";
+"use client";
+
+import Link from "@/components/i18n/LocalizedLink";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 export default function Footer() {
+  const { t } = useI18n();
   const year = new Date().getFullYear();
 
   return (
@@ -12,34 +16,33 @@ export default function Footer() {
               Dabber
             </span>
             <p className="mt-3 max-w-md text-sm leading-6 text-white/60">
-              Trouvez du matériel à louer en Tunisie, choisissez vos dates et
-              suivez la réponse du propriétaire depuis votre compte.
+              {t("footer.description")}
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-white">Explorer</h3>
+            <h3 className="text-sm font-semibold text-white">{t("footer.explore")}</h3>
             <ul className="mt-3 flex flex-col gap-2 text-sm text-white/60">
-              <li><Link href="/listings" className="hover:text-white">Toutes les offres</Link></li>
-              <li><Link href="/#categories" className="hover:text-white">Catégories</Link></li>
-              <li><Link href="/#comment-ca-marche" className="hover:text-white">Comment ça marche</Link></li>
-              <li><Link href="/listings/new" className="hover:text-white">Publier mon matériel</Link></li>
+              <li><Link href="/listings" className="hover:text-white">{t("footer.allListings")}</Link></li>
+              <li><Link href="/#categories" className="hover:text-white">{t("nav.categories")}</Link></li>
+              <li><Link href="/#comment-ca-marche" className="hover:text-white">{t("nav.how")}</Link></li>
+              <li><Link href="/listings/new" className="hover:text-white">{t("nav.publish")}</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-white">Informations</h3>
+            <h3 className="text-sm font-semibold text-white">{t("footer.information")}</h3>
             <ul className="mt-3 flex flex-col gap-2 text-sm text-white/60">
-              <li><Link href="/login" className="hover:text-white">Se connecter</Link></li>
-              <li><Link href="/privacy" className="hover:text-white">Confidentialité</Link></li>
-              <li><Link href="/terms" className="hover:text-white">Conditions d&apos;utilisation</Link></li>
+              <li><Link href="/login" className="hover:text-white">{t("nav.login")}</Link></li>
+              <li><Link href="/privacy" className="hover:text-white">{t("footer.privacy")}</Link></li>
+              <li><Link href="/terms" className="hover:text-white">{t("footer.terms")}</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {year} Dabber. Tous droits réservés.</span>
-          <span>La location, sans l’achat inutile.</span>
+          <span>{t("footer.rights", { year })}</span>
+          <span>{t("footer.tagline")}</span>
         </div>
       </div>
     </footer>

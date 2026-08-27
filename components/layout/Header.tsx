@@ -1,20 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { Bell, CalendarDays, Menu, MessageCircle, User as UserIcon, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import Link from "@/components/i18n/LocalizedLink";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import type { TranslationKey } from "@/lib/i18n/dictionaries";
 
 const navLinks = [
-  { label: "Trouver du matériel", href: "/listings" },
-  { label: "Catégories", href: "/#categories" },
-  { label: "Comment ça marche", href: "/#comment-ca-marche" },
-  { label: "Pourquoi Dabber", href: "/#confiance" },
-];
+  { label: "nav.find", href: "/listings" },
+  { label: "nav.categories", href: "/#categories" },
+  { label: "nav.how", href: "/#comment-ca-marche" },
+  { label: "nav.why", href: "/#confiance" },
+] satisfies { label: TranslationKey; href: string }[];
 
 export default function Header() {
+  const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{
@@ -175,71 +179,73 @@ export default function Header() {
 
   const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
   const displayName =
-    profile?.full_name ?? user?.user_metadata?.full_name ?? "Mon compte";
+    profile?.full_name ?? user?.user_metadata?.full_name ?? t("nav.account");
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[4.5rem] max-w-[90rem] items-center gap-5 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="text-xl font-extrabold tracking-tight text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md"
+          className="shrink-0 rounded-md text-xl font-extrabold tracking-tight text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           Dabber
         </Link>
 
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Navigation principale">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-hidden xl:flex" aria-label={t("nav.main")}>
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md"
+              className="whitespace-nowrap text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md"
             >
-              {link.label}
+              {t(link.label)}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 xl:flex">
           {user ? (
             <>
-              <Link
-                href="/notifications"
-                aria-label={
-                  notificationUnreadCount > 0
-                    ? `Notifications, ${notificationUnreadCount} non lues`
-                    : "Notifications"
-                }
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-              >
-                <Bell className="h-5 w-5" aria-hidden="true" />
-                {notificationUnreadCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
-                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href="/reservations"
-                aria-label="Mes réservations"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-              >
-                <CalendarDays className="h-5 w-5" aria-hidden="true" />
-              </Link>
-              <Link
-                href="/messages"
-                aria-label={unreadCount > 0 ? `Messages, ${unreadCount} non lus` : "Messages"}
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-              >
-                <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </Link>
+              <div className="flex items-center gap-0.5 rounded-xl border border-border bg-subtle/70 p-1">
+                <Link
+                  href="/notifications"
+                  aria-label={
+                    notificationUnreadCount > 0
+                      ? t("nav.unreadNotifications", { count: notificationUnreadCount })
+                      : t("nav.notifications")
+                  }
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                >
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                  {notificationUnreadCount > 0 && (
+                    <span className="absolute -end-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                      {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/reservations"
+                  aria-label={t("nav.reservations")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                >
+                  <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/messages"
+                  aria-label={unreadCount > 0 ? t("nav.unreadMessages", { count: unreadCount }) : t("nav.messages")}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                >
+                  <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -end-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
               <Link
                 href="/account"
-                className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                className="flex min-w-0 max-w-[9rem] items-center gap-2 rounded-md border-s border-border ps-3 text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
                 <span className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
                   {avatarUrl ? (
@@ -254,29 +260,32 @@ export default function Header() {
                     <UserIcon className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                 </span>
-                {displayName}
+                <span className="truncate">{displayName}</span>
               </Link>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md px-2 py-2"
+                className="shrink-0 whitespace-nowrap rounded-md px-1 py-2 text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
-                Se déconnecter
+                {t("nav.logout")}
               </button>
             </>
           ) : (
             <Link
               href="/login"
-              className="text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md px-2 py-2"
+              className="whitespace-nowrap rounded-md px-1 py-2 text-sm font-medium text-ink transition-colors hover:text-ink/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              Se connecter
+              {t("nav.login")}
             </Link>
           )}
+          <div className="border-s border-border ps-3">
+            <LanguageSwitcher compact />
+          </div>
           <Link
             href="/listings/new"
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="shrink-0 whitespace-nowrap rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
-            Louer mon matériel
+            {t("nav.publish")}
           </Link>
         </div>
 
@@ -285,8 +294,8 @@ export default function Header() {
           onClick={() => setIsMenuOpen((open) => !open)}
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
-          aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 lg:hidden"
+          aria-label={isMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+          className="flex h-11 w-11 items-center justify-center rounded-xl text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 xl:hidden"
         >
           {isMenuOpen ? (
             <X className="h-6 w-6" aria-hidden="true" />
@@ -299,8 +308,8 @@ export default function Header() {
       {isMenuOpen && (
         <nav
           id="mobile-menu"
-          aria-label="Navigation mobile"
-          className="border-t border-border bg-white px-4 py-4 lg:hidden"
+          aria-label={t("nav.mobile")}
+          className="border-t border-border bg-white px-4 py-4 xl:hidden"
         >
           <ul className="flex flex-col gap-1">
             {navLinks.map((link) => (
@@ -310,7 +319,7 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="block rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  {link.label}
+                  {t(link.label)}
                 </Link>
               </li>
             ))}
@@ -323,7 +332,7 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Notifications
+                  {t("nav.notifications")}
                   {notificationUnreadCount > 0
                     ? ` (${notificationUnreadCount})`
                     : ""}
@@ -333,14 +342,14 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Mes réservations
+                  {t("nav.reservations")}
                 </Link>
                 <Link
                   href="/messages"
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Messages{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                  {t("nav.messages")}{unreadCount > 0 ? ` (${unreadCount})` : ""}
                 </Link>
                 <Link
                   href="/account"
@@ -354,7 +363,7 @@ export default function Header() {
                   onClick={handleSignOut}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-muted hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Se déconnecter
+                  {t("nav.logout")}
                 </button>
               </>
             ) : (
@@ -363,7 +372,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
                 className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                Se connecter
+                {t("nav.login")}
               </Link>
             )}
             <Link
@@ -371,8 +380,11 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
               className="rounded-xl bg-accent px-3 py-3 text-center text-sm font-semibold text-ink hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              Louer mon matériel
+              {t("nav.publish")}
             </Link>
+            <div className="flex justify-center pt-2">
+              <LanguageSwitcher />
+            </div>
           </div>
         </nav>
       )}

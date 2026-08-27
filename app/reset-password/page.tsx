@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import UpdatePasswordForm from "@/components/auth/UpdatePasswordForm";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "Nouveau mot de passe",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ResetPasswordPage() {
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,9 +23,9 @@ export default async function ResetPasswordPage() {
   return (
     <div className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center px-4 py-20">
       <div className="w-full rounded-2xl border border-border bg-white p-8">
-        <h1 className="text-xl font-semibold text-ink">Nouveau mot de passe</h1>
+        <h1 className="text-xl font-semibold text-ink">{t("auth.newPassword")}</h1>
         <p className="mt-2 text-sm text-muted">
-          Choisissez un mot de passe d’au moins 8 caractères.
+          {t("auth.newPasswordDescription")}
         </p>
         <UpdatePasswordForm />
       </div>

@@ -5,22 +5,36 @@ import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/home/SearchBar";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingCardData } from "@/lib/supabase/types";
+import { getServerI18n, getLocale } from "@/lib/i18n/server";
+import { locales, defaultLocale, localizePath, type Locale } from "@/lib/i18n/config";
+import { SITE_URL } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Toutes les annonces de location",
-  description:
-    "Parcourez toutes les annonces de matériel et équipements à louer en Tunisie : audiovisuel, événementiel, camping, mode et plus.",
-  alternates: {
-    canonical: "/listings",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const { t } = await getServerI18n();
+
+  const languages: Record<string, string> = {};
+  for (const loc of locales) {
+    languages[loc] = `${SITE_URL}${localizePath("/listings", loc)}`;
+  }
+  languages["x-default"] = `${SITE_URL}${localizePath("/listings", defaultLocale)}`;
+
+  return {
+    title: t("meta.listings.title"),
+    description: t("meta.listings.description"),
+    alternates: {
+      canonical: `${SITE_URL}${localizePath("/listings", locale)}`,
+      languages,
+    },
+  };
+}
 
 function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function formatSearchDate(isoDate: string) {
-  return new Intl.DateTimeFormat("fr-FR", {
+function formatSearchDate(isoDate: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -32,6 +46,7 @@ export default async function ListingsPage({
   searchParams,
 }: PageProps<"/listings">) {
   const params = await searchParams;
+  const { locale, t } = await getServerI18n();
   const query = firstValue(params.query)?.trim();
   const location = firstValue(params.location);
   const category = firstValue(params.category);
@@ -79,9 +94,9 @@ export default async function ListingsPage({
     <div className="bg-subtle">
       <section className="border-b border-border bg-ink py-10 sm:py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Explorer Dabber</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">{t("listings.explore")}</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Trouvez l’offre qui correspond à votre besoin.
+            {t("listings.hero")}
           </h1>
           <div className="mt-6">
             <SearchBar
@@ -96,11 +111,11 @@ export default async function ListingsPage({
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <SectionHeader
-          title={query ? `Résultats pour « ${query} »` : "Toutes les offres"}
+          title={query ? t("listings.results", { query }) : t("listings.all")}
           description={
             rangeStart && rangeEnd
-              ? `Offres sans réservation confirmée du ${formatSearchDate(rangeStart)} au ${formatSearchDate(rangeEnd)}.`
-              : "Parcourez les produits proposés à la location."
+              ? t("listings.range", { start: formatSearchDate(rangeStart, locale), end: formatSearchDate(rangeEnd, locale) })
+              : t("listings.browse")
           }
         />
 
@@ -113,8 +128,8 @@ export default async function ListingsPage({
         ) : (
           <div className="mt-8">
             <EmptyState
-              title="Aucune annonce trouvée"
-              description="Modifiez vos dates, votre région ou votre recherche pour voir d’autres offres."
+              title={t("listings.empty")}
+              description={t("listings.emptyDescription")}
             />
           </div>
         )}

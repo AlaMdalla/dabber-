@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, ExternalLink, Share2 } from "lucide-react";
 import { FACEBOOK_GROUP_URL } from "@/lib/constants";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 interface ShareToFacebookButtonProps {
   name: string;
@@ -17,11 +18,12 @@ export default function ShareToFacebookButton({
   governorate,
   url,
 }: ShareToFacebookButtonProps) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const priceText =
-    pricePerDay !== null ? `${pricePerDay} DT / jour` : "Prix sur demande";
-  const caption = `${name} — ${priceText} — ${governorate}\nDisponible sur Dabber : ${url}`;
+    pricePerDay !== null ? t("common.priceDay", { price: pricePerDay }) : t("common.priceRequest");
+  const caption = t("share.caption", { name, price: priceText, location: governorate, url });
 
   function handleShare() {
     const sharerUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
@@ -37,12 +39,10 @@ export default function ShareToFacebookButton({
   return (
     <div className="rounded-2xl border border-border bg-white p-5">
       <h3 className="text-sm font-semibold text-ink">
-        Partager cette annonce
+        {t("share.title")}
       </h3>
       <p className="mt-1 text-xs text-muted">
-        Facebook ne permet pas de publier directement dans un groupe : partagez,
-        puis choisissez le groupe dans la fenêtre Facebook, ou copiez le texte
-        pour le coller vous-même.
+        {t("share.description")}
       </p>
 
       <div className="mt-4 flex flex-col gap-2">
@@ -52,7 +52,7 @@ export default function ShareToFacebookButton({
           className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1877F2] text-sm font-semibold text-white transition-colors hover:bg-[#166FE0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <Share2 className="h-4 w-4" aria-hidden="true" />
-          Partager sur Facebook
+          {t("share.facebook")}
         </button>
 
         <button
@@ -61,7 +61,7 @@ export default function ShareToFacebookButton({
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <Copy className="h-4 w-4" aria-hidden="true" />
-          {copied ? "Texte copié !" : "Copier le texte de l'annonce"}
+          {copied ? t("share.copied") : t("share.copy")}
         </button>
 
         <a
@@ -71,7 +71,7 @@ export default function ShareToFacebookButton({
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          Ouvrir notre groupe Facebook
+          {t("share.group")}
         </a>
       </div>
     </div>

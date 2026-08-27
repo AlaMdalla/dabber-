@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { ImageOff, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import type { Message, MessageWithListing, SharedListing } from "@/lib/supabase/types";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 interface MessageThreadProps {
   conversationId: string;
@@ -16,6 +18,7 @@ interface MessageThreadProps {
 }
 
 function SharedListingCard({ listing }: { listing: SharedListing }) {
+  const { t } = useI18n();
   return (
     <Link
       href={`/listings/${listing.slug}`}
@@ -43,8 +46,8 @@ function SharedListingCard({ listing }: { listing: SharedListing }) {
         )}
         <p className="mt-0.5 text-xs font-medium text-ink">
           {listing.price_per_day !== null
-            ? `${listing.price_per_day} DT / jour`
-            : "Prix sur demande"}
+            ? t("common.priceDay", { price: listing.price_per_day })
+            : t("common.priceRequest")}
         </p>
       </div>
     </Link>
@@ -57,6 +60,7 @@ export default function MessageThread({
   initialMessages,
   otherWhatsappNumber,
 }: MessageThreadProps) {
+  const { locale, t } = useI18n();
   const [messages, setMessages] = useState<MessageWithListing[]>(initialMessages);
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -71,8 +75,8 @@ export default function MessageThread({
     const listing = lastShared?.listings;
     const productInfo = listing
       ? `\n\n📦 ${listing.name}\n💰 ${
-          listing.price_per_day !== null ? `${listing.price_per_day} DT / jour` : "Prix sur demande"
-        }\n🔗 ${window.location.origin}/listings/${listing.slug}`
+          listing.price_per_day !== null ? t("common.priceDay", { price: listing.price_per_day }) : t("common.priceRequest")
+        }\n🔗 ${window.location.origin}${localizePath(`/listings/${listing.slug}`, locale)}`
       : "";
     const fullMessage = `${trimmed}${productInfo}`;
 
@@ -232,7 +236,7 @@ export default function MessageThread({
           type="text"
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Écrire un message…"
+          placeholder={t("messages.write")}
           className="h-12 flex-1 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
         <button
@@ -240,14 +244,14 @@ export default function MessageThread({
           disabled={isSending || !body.trim()}
           className="h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
         >
-          Envoyer
+          {t("common.send")}
         </button>
         {otherWhatsappNumber && (
           <button
             type="button"
             onClick={handleSendWhatsapp}
             disabled={!body.trim()}
-            aria-label="Envoyer ce message via WhatsApp"
+            aria-label={t("messages.sendWhatsapp")}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 disabled:opacity-60"
           >
             <MessageCircle className="h-5 w-5" aria-hidden="true" />

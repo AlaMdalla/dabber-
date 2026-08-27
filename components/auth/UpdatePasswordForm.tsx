@@ -4,8 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 export default function UpdatePasswordForm() {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -17,11 +20,11 @@ export default function UpdatePasswordForm() {
     setError(null);
 
     if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      setError(t("auth.passwordMin"));
       return;
     }
     if (password !== confirmation) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("auth.passwordMismatch"));
       return;
     }
 
@@ -35,7 +38,7 @@ export default function UpdatePasswordForm() {
       return;
     }
 
-    router.push("/account");
+    router.push(localizePath("/account", locale));
     router.refresh();
   }
 
@@ -43,7 +46,7 @@ export default function UpdatePasswordForm() {
     <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="new-password" className="text-xs font-semibold text-ink">
-          Nouveau mot de passe
+          {t("auth.newPassword")}
         </label>
         <input
           id="new-password"
@@ -58,7 +61,7 @@ export default function UpdatePasswordForm() {
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="confirm-password" className="text-xs font-semibold text-ink">
-          Confirmer le mot de passe
+          {t("auth.confirmPassword")}
         </label>
         <input
           id="confirm-password"
@@ -77,7 +80,7 @@ export default function UpdatePasswordForm() {
         disabled={isSubmitting}
         className="h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
       >
-        {isSubmitting ? "Enregistrement…" : "Enregistrer le mot de passe"}
+        {isSubmitting ? t("common.saving") : t("auth.savePassword")}
       </button>
     </form>
   );

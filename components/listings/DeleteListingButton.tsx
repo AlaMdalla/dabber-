@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
 
 interface DeleteListingButtonProps {
   listingId: string;
@@ -27,11 +29,12 @@ function getListingImagePath(publicUrl: string) {
 export default function DeleteListingButton({
   listingId,
 }: DeleteListingButtonProps) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleDelete() {
-    if (!window.confirm("Supprimer définitivement cette annonce ?")) return;
+    if (!window.confirm(t("delete.confirm"))) return;
 
     setIsDeleting(true);
     const supabase = createClient();
@@ -49,7 +52,7 @@ export default function DeleteListingButton({
     if (error) {
       console.error("[DeleteListingButton] delete failed:", error);
       setIsDeleting(false);
-      window.alert(`La suppression a échoué : ${describeError(error)}`);
+      window.alert(t("delete.failed", { error: describeError(error) }));
       return;
     }
 
@@ -66,7 +69,7 @@ export default function DeleteListingButton({
       }
     }
 
-    router.push("/account");
+    router.push(localizePath("/account", locale));
     router.refresh();
   }
 
@@ -77,7 +80,7 @@ export default function DeleteListingButton({
       disabled={isDeleting}
       className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 disabled:opacity-60"
     >
-      {isDeleting ? "Suppression…" : "Supprimer"}
+      {isDeleting ? t("delete.deleting") : t("common.delete")}
     </button>
   );
 }

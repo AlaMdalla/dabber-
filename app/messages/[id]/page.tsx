@@ -1,15 +1,17 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, MessageCircle, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ConversationWithDetails, MessageWithListing, Profile } from "@/lib/supabase/types";
 import MessageThread from "@/components/messages/MessageThread";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export default async function ConversationPage({
   params,
 }: PageProps<"/messages/[id]">) {
   const { id } = await params;
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
@@ -59,11 +61,11 @@ export default async function ConversationPage({
           href="/messages"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
         </Link>
         <Link
           href={`/profiles/${otherId}`}
-          aria-label={`Voir le profil de ${other?.full_name ?? "cet utilisateur"}`}
+          aria-label={t("messages.viewProfile", { name: other?.full_name ?? t("common.user") })}
           className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {other?.avatar_url ? (
@@ -83,7 +85,7 @@ export default async function ConversationPage({
             href={`/profiles/${otherId}`}
             className="block truncate text-sm font-semibold text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            {other?.full_name ?? "Utilisateur Dabber"}
+            {other?.full_name ?? t("listing.dabberUser")}
           </Link>
         </div>
         {whatsappNumber && (
@@ -91,7 +93,7 @@ export default async function ConversationPage({
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noreferrer"
-            aria-label="Contacter sur WhatsApp"
+            aria-label={t("messages.contactWhatsapp")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
           >
             <MessageCircle className="h-4 w-4" aria-hidden="true" />

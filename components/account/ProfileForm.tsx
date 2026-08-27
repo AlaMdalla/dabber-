@@ -7,6 +7,7 @@ import { Camera, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import type { Profile } from "@/lib/supabase/types";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 interface ProfileFormProps {
   profile: Profile;
@@ -30,6 +31,7 @@ function getAvatarImagePath(publicUrl: string) {
 }
 
 export default function ProfileForm({ profile }: ProfileFormProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsapp_number ?? "");
@@ -39,7 +41,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const displayName = fullName.trim() || profile.full_name || "Utilisateur";
+  const displayName = fullName.trim() || profile.full_name || t("common.user");
   const avatarUrl = avatarPreview ?? profile.avatar_url;
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -60,7 +62,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
     const normalizedWhatsapp = whatsappNumber.replace(/[\s()-]/g, "");
     if (normalizedWhatsapp && !/^\+[1-9]\d{7,14}$/.test(normalizedWhatsapp)) {
       setIsSaving(false);
-      setErrorMessage("Utilisez le format international, par exemple +21620123456.");
+      setErrorMessage(t("account.whatsappInvalid"));
       setStatus("error");
       return;
     }
@@ -78,7 +80,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
 
         if (uploadError) {
           console.error("[ProfileForm] avatar upload failed:", uploadError);
-          throw new Error(`Envoi de la photo : ${describeError(uploadError)}`);
+          throw new Error(t("account.photoUploadError", { error: describeError(uploadError) }));
         }
 
         avatarUrl = supabase.storage.from("avatar-images").getPublicUrl(path)
@@ -148,7 +150,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
             className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-subtle focus-within:outline-none focus-within:ring-2 focus-within:ring-accent"
           >
             <Camera className="h-4 w-4" aria-hidden="true" />
-            {avatarUrl ? "Changer la photo" : "Ajouter une photo"}
+            {avatarUrl ? t("account.changePhoto") : t("account.addPhoto")}
           </label>
           <input
             id="avatar"
@@ -166,7 +168,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="full_name" className="text-xs font-semibold text-ink">
-          Nom affiché
+          {t("auth.displayName")}
         </label>
         <input
           id="full_name"
@@ -174,14 +176,14 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           type="text"
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
-          placeholder="Votre nom"
+          placeholder={t("account.namePlaceholder")}
           className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="whatsapp_number" className="text-xs font-semibold text-ink">
-          Numéro WhatsApp
+          {t("account.whatsapp")}
         </label>
         <input
           id="whatsapp_number"
@@ -196,7 +198,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
         <p id="whatsapp-help" className="text-xs text-muted">
-          Format international. Ce numéro sera visible sur vos annonces.
+          {t("account.whatsappHelp")}
         </p>
       </div>
 
@@ -206,11 +208,11 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           disabled={isSaving}
           className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
         >
-          {isSaving ? "Enregistrement…" : "Enregistrer"}
+          {isSaving ? t("common.saving") : t("common.save")}
         </button>
         {status === "saved" && (
           <span className="text-sm font-medium text-green-700">
-            Profil mis à jour.
+            {t("account.updated")}
           </span>
         )}
         {status === "error" && (

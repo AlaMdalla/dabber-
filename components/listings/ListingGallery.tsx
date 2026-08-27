@@ -4,13 +4,16 @@ import { useState } from "react";
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
 import type { ListingImage } from "@/lib/supabase/types";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 interface ListingGalleryProps {
   images: ListingImage[];
   listingName: string;
+  location: string;
 }
 
-export default function ListingGallery({ images, listingName }: ListingGalleryProps) {
+export default function ListingGallery({ images, listingName, location }: ListingGalleryProps) {
+  const { t } = useI18n();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = images[selectedIndex] ?? images[0];
 
@@ -20,7 +23,7 @@ export default function ListingGallery({ images, listingName }: ListingGalleryPr
         {selected ? (
           <Image
             src={selected.image_url}
-            alt={`${listingName} — photo ${selectedIndex + 1}`}
+            alt={t("listing.mainPhotoAlt", { name: listingName, location, number: selectedIndex + 1 })}
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
@@ -34,13 +37,13 @@ export default function ListingGallery({ images, listingName }: ListingGalleryPr
       </div>
 
       {images.length > 1 && (
-        <div className="mt-3 grid grid-cols-5 gap-2" aria-label="Photos de l’annonce">
+        <div className="mt-3 grid grid-cols-5 gap-2" aria-label={t("listing.photos")}>
           {images.map((image, index) => (
             <button
               key={image.id}
               type="button"
               onClick={() => setSelectedIndex(index)}
-              aria-label={`Afficher la photo ${index + 1}`}
+              aria-label={t("listing.showPhoto", { number: index + 1 })}
               aria-pressed={index === selectedIndex}
               className={`relative aspect-square overflow-hidden rounded-lg border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 index === selectedIndex ? "border-ink" : "border-transparent"

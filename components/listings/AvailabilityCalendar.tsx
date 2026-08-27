@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
@@ -10,6 +10,7 @@ import type {
   ReservationStatus,
   ReservationWithRenter,
 } from "@/lib/supabase/types";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 interface AvailabilityCalendarProps {
   listingId: string;
@@ -19,8 +20,6 @@ interface AvailabilityCalendarProps {
 }
 
 type DayStatus = "green" | "orange" | "red";
-
-const WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 function toISODate(date: Date) {
   const year = date.getFullYear();
@@ -62,19 +61,20 @@ function buildMonthGrid(year: number, month: number) {
   return cells;
 }
 
-const STATUS_LABEL: Record<ReservationStatus, string> = {
-  pending: "En attente",
-  confirmed: "Confirmée",
-  declined: "Refusée",
-  cancelled: "Annulée",
-};
-
 export default function AvailabilityCalendar({
   listingId,
   listingSlug,
   isOwner,
   currentUserId,
 }: AvailabilityCalendarProps) {
+  const { locale, t } = useI18n();
+  const weekdayLabels = t("calendar.weekdays").split(",");
+  const statusLabel: Record<ReservationStatus, string> = {
+    pending: t("calendar.pending"),
+    confirmed: t("status.confirmed"),
+    declined: t("calendar.declined"),
+    cancelled: t("calendar.cancelled"),
+  };
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1)
@@ -181,7 +181,7 @@ export default function AvailabilityCalendar({
     for (const day of eachIsoDayInRange(selectedStart, iso)) {
       if (getDayStatus(day, ranges) === "red") {
         setError(
-          "Cette période contient des dates déjà réservées. Choisissez une autre plage."
+          t("calendar.overlap")
         );
         return;
       }
@@ -219,7 +219,7 @@ export default function AvailabilityCalendar({
       if (insertError) throw insertError;
 
       setNotice(
-        "Demande envoyée ! Le propriétaire doit encore la confirmer — vous serez averti."
+        t("calendar.sent")
       );
       setSelectedStart(null);
       setSelectedEnd(null);
@@ -256,11 +256,11 @@ export default function AvailabilityCalendar({
   return (
     <div className="rounded-2xl border border-border bg-white p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Disponibilité</h3>
+        <h3 className="text-sm font-semibold text-ink">{t("calendar.availability")}</h3>
         <div className="flex items-center gap-1">
           <button
             type="button"
-            aria-label="Mois précédent"
+            aria-label={t("calendar.previous")}
             onClick={() =>
               setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))
             }
@@ -269,14 +269,14 @@ export default function AvailabilityCalendar({
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <span className="min-w-[9rem] text-center text-sm font-medium capitalize text-ink">
-            {cursor.toLocaleDateString("fr-FR", {
+            {cursor.toLocaleDateString(locale, {
               month: "long",
               year: "numeric",
             })}
           </span>
           <button
             type="button"
-            aria-label="Mois suivant"
+            aria-label={t("calendar.next")}
             onClick={() =>
               setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))
             }
@@ -288,7 +288,7 @@ export default function AvailabilityCalendar({
       </div>
 
       <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted">
-        {WEEKDAY_LABELS.map((label) => (
+        {weekdayLabels.map((label) => (
           <div key={label}>{label}</div>
         ))}
       </div>
@@ -334,15 +334,15 @@ export default function AvailabilityCalendar({
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-          Disponible
+          {t("common.available")}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-          Réservé, pas encore confirmé
+          {t("calendar.requestedLegend")}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-          Complet
+          {t("calendar.full")}
         </span>
       </div>
 
@@ -358,12 +358,12 @@ export default function AvailabilityCalendar({
       {!isOwner && selectedStart && (
         <div className="mt-4 rounded-xl border border-border bg-subtle p-3.5">
           <p className="text-xs text-muted">
-            Période sélectionnée :{" "}
+            {t("calendar.selected")}{" "}
             <span className="font-medium text-ink">
-              {fromISODate(selectedStart).toLocaleDateString("fr-FR")}
+              {fromISODate(selectedStart).toLocaleDateString(locale)}
               {selectedEnd &&
                 selectedEnd !== selectedStart &&
-                ` → ${fromISODate(selectedEnd).toLocaleDateString("fr-FR")}`}
+                ` → ${fromISODate(selectedEnd).toLocaleDateString(locale)}`}
             </span>
           </p>
 
@@ -372,7 +372,7 @@ export default function AvailabilityCalendar({
               href={`/login?next=/listings/${listingSlug}`}
               className="mt-3 flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover"
             >
-              Se connecter pour réserver
+              {t("calendar.login")}
             </Link>
           ) : (
             <button
@@ -382,10 +382,10 @@ export default function AvailabilityCalendar({
               className="mt-3 h-10 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
             >
               {isSubmitting
-                ? "Envoi…"
+                ? t("common.sending")
                 : selectedEnd
-                  ? "Demander cette réservation"
-                  : "Choisissez une date de fin"}
+                  ? t("calendar.request")
+                  : t("calendar.chooseEnd")}
             </button>
           )}
         </div>
@@ -394,7 +394,7 @@ export default function AvailabilityCalendar({
       {isOwner && ownerReservations.length > 0 && (
         <div className="mt-5 border-t border-border pt-4">
           <h4 className="text-xs font-semibold text-ink">
-            Demandes de réservation
+            {t("calendar.requests")}
           </h4>
           <ul className="mt-2 flex flex-col gap-2">
             {ownerReservations.map((reservation) => (
@@ -404,14 +404,14 @@ export default function AvailabilityCalendar({
               >
                 <div>
                   <p className="text-xs font-medium text-ink">
-                    {reservation.profiles?.full_name ?? "Utilisateur Dabber"}
+                    {reservation.profiles?.full_name ?? t("listing.dabberUser")}
                   </p>
                   <p className="text-xs text-muted">
                     {fromISODate(reservation.start_date).toLocaleDateString(
-                      "fr-FR"
+                      locale
                     )}
                     {reservation.end_date !== reservation.start_date &&
-                      ` → ${fromISODate(reservation.end_date).toLocaleDateString("fr-FR")}`}
+                      ` → ${fromISODate(reservation.end_date).toLocaleDateString(locale)}`}
                     {" · "}
                     <span
                       className={
@@ -420,7 +420,7 @@ export default function AvailabilityCalendar({
                           : "text-amber-700"
                       }
                     >
-                      {STATUS_LABEL[reservation.status]}
+                      {statusLabel[reservation.status]}
                     </span>
                   </p>
                 </div>
@@ -431,7 +431,7 @@ export default function AvailabilityCalendar({
                       onClick={() => handleOwnerAction(reservation.id, "confirmed")}
                       className="rounded-lg bg-green-100 px-2.5 py-1.5 text-xs font-medium text-green-800 transition-colors hover:bg-green-200"
                     >
-                      Confirmer
+                      {t("common.confirm")}
                     </button>
                   )}
                   <button
@@ -444,7 +444,7 @@ export default function AvailabilityCalendar({
                       }
                     className="rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-medium text-red-800 transition-colors hover:bg-red-200"
                   >
-                    {reservation.status === "pending" ? "Refuser" : "Annuler"}
+                    {reservation.status === "pending" ? t("common.decline") : t("common.cancel")}
                   </button>
                 </div>
               </li>

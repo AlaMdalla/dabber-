@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { redirect } from "next/navigation";
 import { Paperclip, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import EmptyState from "@/components/ui/EmptyState";
 import type { ConversationWithDetails, MessageWithListing } from "@/lib/supabase/types";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "Messages",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MessagesPage() {
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
@@ -67,7 +69,7 @@ export default async function MessagesPage() {
             const isUserA = conversation.user_a_id === user.id;
             const other = isUserA ? conversation.user_b : conversation.user_a;
             const lastMessage = lastMessageByConversation.get(conversation.id);
-            const otherName = other?.full_name ?? "Utilisateur Dabber";
+            const otherName = other?.full_name ?? t("listing.dabberUser");
 
             return (
               <li key={conversation.id}>
@@ -98,7 +100,7 @@ export default async function MessagesPage() {
                           <Paperclip className="h-3 w-3 shrink-0" aria-hidden="true" />
                         )}
                         {lastMessage.listing_id
-                          ? lastMessage.listings?.name ?? "Annonce"
+                          ? lastMessage.listings?.name ?? t("common.listing")
                           : lastMessage.body}
                       </p>
                     )}
@@ -111,8 +113,8 @@ export default async function MessagesPage() {
       ) : (
         <div className="mt-8">
           <EmptyState
-            title="Aucune conversation"
-            description="Contactez un vendeur depuis une annonce pour démarrer une conversation."
+            title={t("messages.empty")}
+            description={t("messages.emptyDescription")}
           />
         </div>
       )}

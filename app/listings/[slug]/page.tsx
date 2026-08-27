@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { notFound } from "next/navigation";
 import { MapPin, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +14,9 @@ import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
 import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
 import ListingGallery from "@/components/listings/ListingGallery";
 import StartConversationForm from "@/components/messages/StartConversationForm";
+import { getServerI18n, getLocale } from "@/lib/i18n/server";
+import { locales, defaultLocale, localizePath } from "@/lib/i18n/config";
+import { localizeCategory } from "@/lib/i18n/categories";
 
 const getListing = cache(async (slug: string) => {
   const supabase = await createClient();
@@ -29,32 +32,45 @@ export async function generateMetadata({
   params,
 }: PageProps<"/listings/[slug]">): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getLocale();
+  const { t } = await getServerI18n();
   const listing = await getListing(slug);
 
   if (!listing) {
     return {};
   }
 
-  const categoryName =
-    categories.find((category) => category.slug === listing.category_slug)
-      ?.name ?? listing.category_slug;
-  const title = `${listing.name} — Location à ${listing.governorate}`;
+  const category = categories.find((item) => item.slug === listing.category_slug);
+  const categoryName = category ? localizeCategory(category, t).name : listing.category_slug;
+  const title = t("listing.metaTitle", { name: listing.name, location: listing.governorate });
   const description =
     listing.description?.slice(0, 160) ??
-    `Louez "${listing.name}" (${categoryName}) à ${listing.governorate} sur Dabber.`;
-  const url = `${SITE_URL}/listings/${listing.slug}`;
+    t("listing.metaDescriptionFallback", {
+      name: listing.name,
+      category: categoryName,
+      location: listing.governorate,
+    });
+  const url = `${SITE_URL}${localizePath(`/listings/${listing.slug}`, locale)}`;
+
+  const languages: Record<string, string> = {};
+  for (const loc of locales) {
+    languages[loc] = `${SITE_URL}${localizePath(`/listings/${listing.slug}`, loc)}`;
+  }
+  languages["x-default"] = `${SITE_URL}${localizePath(`/listings/${listing.slug}`, defaultLocale)}`;
 
   return {
     title,
     description,
     alternates: {
       canonical: url,
+      languages,
     },
     openGraph: {
       title,
       description,
       url,
       type: "website",
+      locale: locale === "fr" ? "fr_FR" : locale === "ar" ? "ar_TN" : "en_US",
       images: listing.image_url ? [{ url: listing.image_url }] : undefined,
     },
   };
@@ -64,6 +80,7 @@ export default async function ListingDetailPage({
   params,
 }: PageProps<"/listings/[slug]">) {
   const { slug } = await params;
+  const { locale, t } = await getServerI18n();
   const [listing, { data: userData }] = await Promise.all([
     getListing(slug),
     (await createClient()).auth.getUser(),
@@ -75,10 +92,9 @@ export default async function ListingDetailPage({
 
   const isAvailable = listing.availability === "disponible";
   const isOwner = userData.user?.id === listing.owner_id;
-  const categoryName =
-    categories.find((category) => category.slug === listing.category_slug)
-      ?.name ?? listing.category_slug;
-  const posterName = listing.profiles?.full_name ?? "Utilisateur Dabber";
+  const category = categories.find((item) => item.slug === listing.category_slug);
+  const categoryName = category ? localizeCategory(category, t).name : listing.category_slug;
+  const posterName = listing.profiles?.full_name ?? t("listing.dabberUser");
   const galleryImages = [...(listing.listing_images ?? [])].sort(
     (a, b) => a.position - b.position,
   );
@@ -97,7 +113,10 @@ export default async function ListingDetailPage({
   const headersList = await headers();
   const host = headersList.get("host");
   const protocol = host?.startsWith("localhost") ? "http" : "https";
-  const listingUrl = `${protocol}://${host}/listings/${listing.slug}`;
+  const listingUrl = `${protocol}://${host}${localizePath(`/listings/${listing.slug}`, locale)}`;
+
+  const listingsIndexUrl = `${protocol}://${host}${localizePath("/listings", locale)}`;
+  const homeUrl = `${protocol}://${host}${localizePath("/", locale)}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -111,12 +130,26 @@ export default async function ListingDetailPage({
       url: listingUrl,
       priceCurrency: "TND",
       price: listing.price_per_day ?? undefined,
+      // Marks this as a rental offer (not a sale) per GoodRelations, which
+      // schema.org's Offer.businessFunction reuses for this exact purpose.
+      businessFunction: "http://purl.org/goodrelations/v1#LeaseOut",
       availability:
         listing.availability === "disponible"
           ? "https://schema.org/InStock"
           : "https://schema.org/LimitedAvailability",
       areaServed: listing.governorate,
     },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: t("breadcrumb.home"), item: homeUrl },
+      { "@type": "ListItem", position: 2, name: listing.governorate, item: `${listingsIndexUrl}?location=${encodeURIComponent(listing.governorate)}` },
+      { "@type": "ListItem", position: 3, name: categoryName, item: `${listingsIndexUrl}?category=${encodeURIComponent(listing.category_slug)}` },
+      { "@type": "ListItem", position: 4, name: listing.name, item: listingUrl },
+    ],
   };
 
   return (
@@ -131,13 +164,23 @@ export default async function ListingDetailPage({
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div>
-          <ListingGallery images={galleryImages} listingName={listing.name} />
+          <ListingGallery
+            images={galleryImages}
+            listingName={listing.name}
+            location={listing.governorate}
+          />
 
           {listing.description && (
             <div className="mt-6">
-              <h2 className="text-sm font-semibold text-ink">Description</h2>
+              <h2 className="text-sm font-semibold text-ink">{t("listing.description")}</h2>
               <p className="mt-2 whitespace-pre-line text-sm text-muted">
                 {listing.description}
               </p>
@@ -160,8 +203,8 @@ export default async function ListingDetailPage({
           <div className="mt-4 flex items-center justify-between rounded-2xl border border-border bg-white p-4">
             <span className="text-lg font-semibold text-ink">
               {listing.price_per_day !== null
-                ? `${listing.price_per_day} DT / jour`
-                : "Prix sur demande"}
+                ? t("common.priceDay", { price: listing.price_per_day })
+                : t("common.priceRequest")}
             </span>
             <span
               className={`rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -170,7 +213,7 @@ export default async function ListingDetailPage({
                   : "bg-amber-100 text-amber-800"
               }`}
             >
-              {isAvailable ? "Disponible" : "À confirmer"}
+              {isAvailable ? t("common.available") : t("common.toConfirm")}
             </span>
           </div>
 
@@ -189,7 +232,7 @@ export default async function ListingDetailPage({
               )}
             </span>
             <div>
-              <p className="text-xs text-muted">Publié par</p>
+              <p className="text-xs text-muted">{t("listing.publishedBy")}</p>
               <p className="text-sm font-semibold text-ink">{posterName}</p>
             </div>
           </div>
@@ -200,7 +243,7 @@ export default async function ListingDetailPage({
                 href={`/listings/${listing.slug}/edit`}
                 className="flex-1 rounded-xl border border-border px-4 py-2.5 text-center text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               >
-                Modifier
+                {t("common.edit")}
               </Link>
               <DeleteListingButton listingId={listing.id} />
             </div>

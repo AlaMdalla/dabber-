@@ -1,11 +1,13 @@
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import SectionHeader from "@/components/ui/SectionHeader";
 import ListingCard from "@/components/ui/ListingCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingCardData } from "@/lib/supabase/types";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export default async function FeaturedListings() {
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const { data: listings } = await supabase
     .from("listings")
@@ -20,8 +22,8 @@ export default async function FeaturedListings() {
     <section className="border-y border-border bg-subtle py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          title="Les dernières offres près de chez vous"
-          description="Parcourez les annonces récemment publiées et consultez leurs disponibilités."
+          title={t("home.featured.title")}
+          description={t("home.featured.description")}
         />
 
         {listings && listings.length > 0 ? (
@@ -38,15 +40,13 @@ export default async function FeaturedListings() {
             {listings.length === 1 && (
               <div className="flex flex-col justify-center border-y border-border px-1 py-8 lg:px-10">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">
-                  Avant d’envoyer votre demande
+                  {t("home.featured.before")}
                 </p>
                 <h3 className="mt-3 text-2xl font-bold tracking-tight text-ink">
-                  L’essentiel est visible dans chaque annonce.
+                  {t("home.featured.essentials")}
                 </h3>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
-                  Prix par jour, localisation, profil du propriétaire et
-                  calendrier vous aident à vérifier si l’offre correspond à
-                  votre besoin avant de prendre contact.
+                  {t("home.featured.details")}
                 </p>
               </div>
             )}
@@ -54,8 +54,8 @@ export default async function FeaturedListings() {
         ) : (
           <div className="mt-8">
             <EmptyState
-              title="Aucune annonce disponible"
-              description="Revenez bientôt : de nouvelles offres de location seront publiées prochainement."
+              title={t("home.featured.emptyTitle")}
+              description={t("home.featured.emptyDescription")}
             />
           </div>
         )}
@@ -65,7 +65,7 @@ export default async function FeaturedListings() {
             href="/listings"
             className="rounded-xl border border-border bg-white px-5 py-3 text-sm font-semibold text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
-            Explorer toutes les offres
+            {t("home.featured.explore")}
           </Link>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { redirect } from "next/navigation";
 import { Bell, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +10,7 @@ import type {
   ReservationNotification,
 } from "@/lib/supabase/types";
 import MarkNotificationsRead from "@/components/notifications/MarkNotificationsRead";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "Notifications",
@@ -23,28 +24,29 @@ type NotificationRow = ReservationNotification & {
   }) | null;
 };
 
-function notificationCopy(notification: NotificationRow) {
-  const actorName = notification.actor?.full_name ?? "Un utilisateur";
-  const listingName = notification.reservations?.listings?.name ?? "une annonce";
+function notificationCopy(notification: NotificationRow, t: (key: string, values?: Record<string, string | number>) => string) {
+  const actorName = notification.actor?.full_name ?? t("notifications.user");
+  const listingName = notification.reservations?.listings?.name ?? t("notifications.aListing");
 
   if (notification.type === "reservation_requested") {
-    return `${actorName} a envoyé une demande de réservation pour ${listingName}.`;
+    return t("notifications.requested", { actor: actorName, listing: listingName });
   }
   if (notification.type === "reservation_confirmed") {
-    return `${actorName} a accepté votre demande pour ${listingName}.`;
+    return t("notifications.confirmed", { actor: actorName, listing: listingName });
   }
   if (notification.type === "reservation_declined") {
-    return `${actorName} a refusé votre demande pour ${listingName}.`;
+    return t("notifications.declined", { actor: actorName, listing: listingName });
   }
 
   const renterCancelled =
     notification.actor_id === notification.reservations?.renter_id;
   return renterCancelled
-    ? `${actorName} a annulé sa demande pour ${listingName}.`
-    : `${actorName} a annulé la réservation pour ${listingName}.`;
+    ? t("notifications.renterCancelled", { actor: actorName, listing: listingName })
+    : t("notifications.ownerCancelled", { actor: actorName, listing: listingName });
 }
 
 export default async function NotificationsPage() {
+  const { locale, t } = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,9 +68,9 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-12 sm:px-6 lg:px-8">
       <MarkNotificationsRead />
-      <h1 className="text-2xl font-bold tracking-tight text-ink">Notifications</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">{t("nav.notifications")}</h1>
       <p className="mt-2 text-sm text-muted">
-        Réponses et changements concernant vos réservations.
+        {t("notifications.description")}
       </p>
 
       {notifications && notifications.length > 0 ? (
@@ -98,17 +100,17 @@ export default async function NotificationsPage() {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm text-ink">
-                      {notificationCopy(notification)}
+                      {notificationCopy(notification, t)}
                     </span>
                     <span className="mt-1 block text-xs text-muted">
-                      {new Intl.DateTimeFormat("fr-FR", {
+                      {new Intl.DateTimeFormat(locale, {
                         dateStyle: "medium",
                         timeStyle: "short",
                       }).format(new Date(notification.created_at))}
                     </span>
                   </span>
                   {!notification.read_at && (
-                    <span className="ml-auto mt-2 h-2 w-2 shrink-0 rounded-full bg-red-600" />
+                    <span className="ms-auto mt-2 h-2 w-2 shrink-0 rounded-full bg-red-600" />
                   )}
                 </Link>
               </li>
@@ -118,9 +120,9 @@ export default async function NotificationsPage() {
       ) : (
         <div className="mt-8 rounded-2xl border border-border bg-white p-8 text-center">
           <Bell className="mx-auto h-8 w-8 text-muted" aria-hidden="true" />
-          <h2 className="mt-3 font-semibold text-ink">Aucune notification</h2>
+          <h2 className="mt-3 font-semibold text-ink">{t("notifications.empty")}</h2>
           <p className="mt-1 text-sm text-muted">
-            Les réponses à vos demandes apparaîtront ici.
+            {t("notifications.emptyDescription")}
           </p>
         </div>
       )}

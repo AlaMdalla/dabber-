@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/i18n/LocalizedLink";
 import { redirect } from "next/navigation";
 import { ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingSummary, Profile } from "@/lib/supabase/types";
 import ProfileForm from "@/components/account/ProfileForm";
 import SignOutButton from "@/components/account/SignOutButton";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "Mon compte",
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,7 +38,7 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-1 flex-col px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight text-ink">
-        Mon compte
+        {t("account.title")}
       </h1>
 
       <div className="mt-8 rounded-2xl border border-border bg-white p-6">
@@ -46,12 +48,12 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-10 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-ink">Mes annonces</h2>
+        <h2 className="text-lg font-semibold text-ink">{t("account.myListings")}</h2>
         <Link
           href="/listings/new"
           className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
-          + Ajouter une annonce
+          {t("account.addListing")}
         </Link>
       </div>
 
@@ -83,8 +85,8 @@ export default async function AccountPage() {
                   <p className="mt-0.5 text-xs text-muted">
                     {listing.governorate} ·{" "}
                     {listing.price_per_day !== null
-                      ? `${listing.price_per_day} DT / jour`
-                      : "Prix sur demande"}
+                      ? t("common.priceDay", { price: listing.price_per_day })
+                      : t("common.priceRequest")}
                   </p>
                 </div>
               </Link>
@@ -93,7 +95,7 @@ export default async function AccountPage() {
         </ul>
       ) : (
         <p className="mt-4 text-sm text-muted">
-          Vous n&apos;avez publié aucune annonce pour le moment.
+          {t("account.noListings")}
         </p>
       )}
 

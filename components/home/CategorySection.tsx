@@ -2,8 +2,10 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import CategoryCard from "@/components/ui/CategoryCard";
 import { createClient } from "@/lib/supabase/server";
 import { categories } from "@/data/categories";
+import { getServerI18n } from "@/lib/i18n/server";
 
 export default async function CategorySection() {
+  const { t } = await getServerI18n();
   const supabase = await createClient();
   const { data: listings } = await supabase.from("listings").select("category_slug");
 
@@ -18,8 +20,8 @@ export default async function CategorySection() {
   return (
     <section id="categories" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
       <SectionHeader
-        title="Un besoin ponctuel ne devrait pas devenir un achat permanent."
-        description="Commencez par la catégorie qui correspond à votre projet."
+        title={t("home.categories.title")}
+        description={t("home.categories.description")}
       />
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -27,7 +29,7 @@ export default async function CategorySection() {
           <CategoryCard
             key={category.slug}
             category={{
-              ...category,
+              slug: category.slug,
               listingCount: listingCounts.get(category.slug) ?? 0,
             }}
           />

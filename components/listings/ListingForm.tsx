@@ -9,6 +9,9 @@ import { describeError } from "@/lib/supabase/errorMessage";
 import { categories } from "@/data/categories";
 import { governorates } from "@/data/governorates";
 import type { Availability, Listing, ListingImage } from "@/lib/supabase/types";
+import { useI18n } from "@/components/i18n/LocaleProvider";
+import { localizePath } from "@/lib/i18n/config";
+import { localizeCategory } from "@/lib/i18n/categories";
 
 interface ListingFormProps {
   ownerId: string;
@@ -38,12 +41,12 @@ function getListingImagePath(publicUrl: string) {
   }
 }
 
-async function compressListingImage(file: File) {
+async function compressListingImage(file: File, t: (key: string) => string) {
   if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-    throw new Error("Utilisez une image JPEG, PNG ou WebP.");
+    throw new Error(t("form.invalidImageType"));
   }
   if (file.size > MAX_SOURCE_IMAGE_SIZE) {
-    throw new Error("Chaque photo doit faire moins de 10 Mo.");
+    throw new Error(t("form.imageTooLarge"));
   }
 
   const bitmap = await createImageBitmap(file);
@@ -58,7 +61,7 @@ async function compressListingImage(file: File) {
 
   if (!context) {
     bitmap.close();
-    throw new Error("Impossible de préparer cette image.");
+    throw new Error(t("form.imagePrepare"));
   }
 
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -69,7 +72,7 @@ async function compressListingImage(file: File) {
   );
 
   if (!blob) {
-    throw new Error("Impossible de compresser cette image.");
+    throw new Error(t("form.imageCompress"));
   }
 
   return new File([blob], `${crypto.randomUUID()}.webp`, {
@@ -82,6 +85,7 @@ export default function ListingForm({
   listing,
   listingImages = [],
 }: ListingFormProps) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const isEditing = Boolean(listing);
 
@@ -123,7 +127,7 @@ export default function ListingForm({
     const availableSlots = MAX_LISTING_IMAGES - existingImages.length - imageFiles.length;
 
     if (selectedFiles.length > availableSlots) {
-      setError(`Vous pouvez ajouter au maximum ${MAX_LISTING_IMAGES} photos.`);
+      setError(t("form.maxPhotos", { max: MAX_LISTING_IMAGES }));
       event.target.value = "";
       return;
     }
@@ -132,7 +136,7 @@ export default function ListingForm({
       (file) => !SUPPORTED_IMAGE_TYPES.has(file.type) || file.size > MAX_SOURCE_IMAGE_SIZE,
     );
     if (invalidFile) {
-      setError("Utilisez des images JPEG, PNG ou WebP de moins de 10 Mo.");
+      setError(t("form.invalidImages"));
       event.target.value = "";
       return;
     }
@@ -158,7 +162,7 @@ export default function ListingForm({
       const uploadedImages: Array<{ image_url: string; storage_path: string }> = [];
 
       for (const imageFile of imageFiles) {
-        const compressedImage = await compressListingImage(imageFile);
+        const compressedImage = await compressListingImage(imageFile, t);
         const path = `${ownerId}/${listingId}/${compressedImage.name}`;
         const { error: uploadError } = await supabase.storage
           .from("listing-images")
@@ -169,7 +173,7 @@ export default function ListingForm({
 
         if (uploadError) {
           console.error("[ListingForm] image upload failed:", uploadError);
-          throw new Error(`Envoi de la photo : ${describeError(uploadError)}`);
+          throw new Error(t("form.uploadPhoto", { error: describeError(uploadError) }));
         }
 
         uploadedPaths.push(path);
@@ -206,7 +210,7 @@ export default function ListingForm({
 
         if (updateError) {
           console.error("[ListingForm] update failed:", updateError);
-          throw new Error(`Mise à jour : ${describeError(updateError)}`);
+          throw new Error(t("form.update", { error: describeError(updateError) }));
         }
 
       } else {
@@ -218,7 +222,7 @@ export default function ListingForm({
 
         if (insertError) {
           console.error("[ListingForm] insert failed:", insertError);
-          throw new Error(`Création de l'annonce : ${describeError(insertError)}`);
+          throw new Error(t("form.create", { error: describeError(insertError) }));
         }
         createdListingId = listingId;
       }
@@ -229,7 +233,7 @@ export default function ListingForm({
         .eq("listing_id", listingId);
 
       if (clearImagesError) {
-        throw new Error(`Mise à jour des photos : ${describeError(clearImagesError)}`);
+        throw new Error(t("form.updatePhotos", { error: describeError(clearImagesError) }));
       }
       shouldRestoreExistingGallery = Boolean(listing);
 
@@ -244,7 +248,7 @@ export default function ListingForm({
           })));
 
         if (imageRowsError) {
-          throw new Error(`Mise à jour des photos : ${describeError(imageRowsError)}`);
+          throw new Error(t("form.updatePhotos", { error: describeError(imageRowsError) }));
         }
       }
       shouldRestoreExistingGallery = false;
@@ -264,7 +268,7 @@ export default function ListingForm({
         }
       }
 
-      router.push(`/listings/${destinationSlug}`);
+      router.push(localizePath(`/listings/${destinationSlug}`, locale));
 
       router.refresh();
     } catch (err) {
@@ -317,7 +321,7 @@ export default function ListingForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className="text-xs font-semibold text-ink">
-          Nom du produit
+          {t("form.name")}
         </label>
         <input
           id="name"
@@ -325,7 +329,7 @@ export default function ListingForm({
           required
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Vidéoprojecteur Full HD"
+          placeholder={t("form.namePlaceholder")}
           className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
@@ -335,14 +339,14 @@ export default function ListingForm({
           htmlFor="description"
           className="text-xs font-semibold text-ink"
         >
-          Description
+          {t("listing.description")}
         </label>
         <textarea
           id="description"
           rows={4}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="État, accessoires inclus, conditions de location…"
+          placeholder={t("form.descriptionPlaceholder")}
           className="rounded-xl border border-border px-3.5 py-3 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
       </div>
@@ -353,7 +357,7 @@ export default function ListingForm({
             htmlFor="category"
             className="text-xs font-semibold text-ink"
           >
-            Catégorie
+            {t("form.category")}
           </label>
           <select
             id="category"
@@ -363,7 +367,7 @@ export default function ListingForm({
           >
             {categories.map((category) => (
               <option key={category.slug} value={category.slug}>
-                {category.name}
+                {localizeCategory(category, t).name}
               </option>
             ))}
           </select>
@@ -374,7 +378,7 @@ export default function ListingForm({
             htmlFor="governorate"
             className="text-xs font-semibold text-ink"
           >
-            Gouvernorat
+            {t("form.governorate")}
           </label>
           <select
             id="governorate"
@@ -392,7 +396,7 @@ export default function ListingForm({
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="price" className="text-xs font-semibold text-ink">
-            Prix par jour (DT)
+            {t("form.price")}
           </label>
           <input
             id="price"
@@ -401,7 +405,7 @@ export default function ListingForm({
             step="0.5"
             value={pricePerDay}
             onChange={(event) => setPricePerDay(event.target.value)}
-            placeholder="Laisser vide pour « prix sur demande »"
+            placeholder={t("form.pricePlaceholder")}
             className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
         </div>
@@ -411,7 +415,7 @@ export default function ListingForm({
             htmlFor="availability"
             className="text-xs font-semibold text-ink"
           >
-            Disponibilité
+            {t("form.availability")}
           </label>
           <select
             id="availability"
@@ -421,15 +425,15 @@ export default function ListingForm({
             }
             className="h-12 rounded-xl border border-border bg-white px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <option value="disponible">Disponible</option>
-            <option value="a-confirmer">À confirmer</option>
+            <option value="disponible">{t("common.available")}</option>
+            <option value="a-confirmer">{t("common.toConfirm")}</option>
           </select>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="images" className="text-xs font-semibold text-ink">
-          Photos ({existingImages.length + imageFiles.length}/{MAX_LISTING_IMAGES})
+          {t("form.photos", { count: existingImages.length + imageFiles.length, max: MAX_LISTING_IMAGES })}
         </label>
         <input
           id="images"
@@ -438,10 +442,10 @@ export default function ListingForm({
           multiple
           disabled={existingImages.length + imageFiles.length >= MAX_LISTING_IMAGES}
           onChange={handleImageSelection}
-          className="rounded-xl border border-border px-3.5 py-2.5 text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-subtle file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="rounded-xl border border-border px-3.5 py-2.5 text-sm text-ink file:me-3 file:rounded-lg file:border-0 file:bg-subtle file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
         <p className="text-xs text-muted">
-          Jusqu’à 5 images JPEG, PNG ou WebP. Elles sont redimensionnées et compressées avant l’envoi.
+          {t("form.photosHelp")}
         </p>
 
         {(existingImages.length > 0 || imageFiles.length > 0) && (
@@ -456,20 +460,20 @@ export default function ListingForm({
                   onClick={() => setExistingImages((current) => current.filter((item) => item.id !== image.id))}
                   className="mt-2 w-full text-xs font-medium text-red-600"
                 >
-                  Supprimer{index === 0 ? " (couverture)" : ""}
+                  {t("common.delete")}{index === 0 ? ` (${t("form.cover")})` : ""}
                 </button>
               </div>
             ))}
             {imageFiles.map((file, index) => (
               <div key={`${file.name}-${file.lastModified}-${index}`} className="rounded-xl border border-border p-2">
                 <p className="truncate text-xs font-medium text-ink">{file.name}</p>
-                <p className="mt-1 text-xs text-muted">Nouvelle photo</p>
+                <p className="mt-1 text-xs text-muted">{t("form.newPhoto")}</p>
                 <button
                   type="button"
                   onClick={() => setImageFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
                   className="mt-2 text-xs font-medium text-red-600"
                 >
-                  Retirer
+                  {t("form.remove")}
                 </button>
               </div>
             ))}
@@ -489,10 +493,10 @@ export default function ListingForm({
         className="h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
       >
         {isSaving
-          ? "Enregistrement…"
+          ? t("common.saving")
           : isEditing
-            ? "Enregistrer les modifications"
-            : "Publier l'annonce"}
+            ? t("form.saveChanges")
+            : t("form.publish")}
       </button>
     </form>
   );

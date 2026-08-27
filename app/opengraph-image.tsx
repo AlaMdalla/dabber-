@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Dabber — Louez ce qu’il vous faut en Tunisie";
+export const alt = "Dabber — Louez ou faites louer votre matériel en Tunisie";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -34,7 +34,7 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 72, fontWeight: 800, letterSpacing: -3 }}>
-            Louez ce qu’il vous faut.
+            Votre matériel qui dort
           </div>
           <div
             style={{
@@ -45,10 +45,10 @@ export default function OpenGraphImage() {
               color: "#facc15",
             }}
           >
-            Pas besoin de l’acheter.
+            peut vous rapporter.
           </div>
           <div style={{ marginTop: 30, fontSize: 26, color: "#c4c8d0" }}>
-            Trouvez du matériel à louer près de chez vous, partout en Tunisie.
+            Publiez votre matériel à louer, ou trouvez ce qu’il vous faut, partout en Tunisie.
           </div>
         </div>
       </div>
