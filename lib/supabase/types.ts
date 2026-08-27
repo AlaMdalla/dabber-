@@ -106,6 +106,15 @@ export interface AvailabilityRange {
   status: "pending" | "confirmed";
 }
 
+/** A date range the owner has blocked off themselves (no renter involved). */
+export interface ListingBlockedDate {
+  id: string;
+  listing_id: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+}
+
 export interface Conversation {
   id: string;
   user_a_id: string;

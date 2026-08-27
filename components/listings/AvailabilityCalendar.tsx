@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import type {
   AvailabilityRange,
+  ListingBlockedDate,
   ReservationStatus,
   ReservationWithRenter,
 } from "@/lib/supabase/types";
@@ -83,6 +84,7 @@ export default function AvailabilityCalendar({
   const [ownerReservations, setOwnerReservations] = useState<
     ReservationWithRenter[]
   >([]);
+  const [blockedDates, setBlockedDates] = useState<ListingBlockedDate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
@@ -93,31 +95,54 @@ export default function AvailabilityCalendar({
   async function fetchAvailability(): Promise<{
     ranges: AvailabilityRange[];
     ownerReservations: ReservationWithRenter[];
+    blockedDates: ListingBlockedDate[];
   }> {
     const supabase = createClient();
 
     if (isOwner) {
-      const { data, error: fetchError } = await supabase
-        .from("reservations")
-        .select("*, profiles(full_name, avatar_url)")
-        .eq("listing_id", listingId)
-        .in("status", ["pending", "confirmed"])
-        .order("start_date")
-        .returns<ReservationWithRenter[]>();
+      const [reservationsResult, blockedResult] = await Promise.all([
+        supabase
+          .from("reservations")
+          .select("*, profiles(full_name, avatar_url)")
+          .eq("listing_id", listingId)
+          .in("status", ["pending", "confirmed"])
+          .order("start_date")
+          .returns<ReservationWithRenter[]>(),
+        supabase
+          .from("listing_blocked_dates")
+          .select("*")
+          .eq("listing_id", listingId)
+          .order("start_date")
+          .returns<ListingBlockedDate[]>(),
+      ]);
 
-      if (fetchError) {
-        console.error("[AvailabilityCalendar] fetch failed:", fetchError);
-        return { ranges: [], ownerReservations: [] };
+      if (reservationsResult.error) {
+        console.error("[AvailabilityCalendar] fetch failed:", reservationsResult.error);
+      }
+      if (blockedResult.error) {
+        console.error("[AvailabilityCalendar] fetch failed:", blockedResult.error);
       }
 
+      const reservations = reservationsResult.data ?? [];
+      const blocked = blockedResult.data ?? [];
+
       return {
-        ownerReservations: data ?? [],
-        ranges: (data ?? []).map((r) => ({
-          listing_id: r.listing_id,
-          start_date: r.start_date,
-          end_date: r.end_date,
-          status: r.status as "pending" | "confirmed",
-        })),
+        ownerReservations: reservations,
+        blockedDates: blocked,
+        ranges: [
+          ...reservations.map((r) => ({
+            listing_id: r.listing_id,
+            start_date: r.start_date,
+            end_date: r.end_date,
+            status: r.status as "pending" | "confirmed",
+          })),
+          ...blocked.map((b) => ({
+            listing_id: b.listing_id,
+            start_date: b.start_date,
+            end_date: b.end_date,
+            status: "confirmed" as const,
+          })),
+        ],
       };
     }
 
@@ -129,16 +154,17 @@ export default function AvailabilityCalendar({
 
     if (fetchError) {
       console.error("[AvailabilityCalendar] fetch failed:", fetchError);
-      return { ranges: [], ownerReservations: [] };
+      return { ranges: [], ownerReservations: [], blockedDates: [] };
     }
 
-    return { ranges: data ?? [], ownerReservations: [] };
+    return { ranges: data ?? [], ownerReservations: [], blockedDates: [] };
   }
 
   function loadAvailability() {
-    return fetchAvailability().then(({ ranges, ownerReservations }) => {
+    return fetchAvailability().then(({ ranges, ownerReservations, blockedDates }) => {
       setRanges(ranges);
       setOwnerReservations(ownerReservations);
+      setBlockedDates(blockedDates);
       setIsLoading(false);
     });
   }
@@ -160,8 +186,16 @@ export default function AvailabilityCalendar({
     return iso < todayIso;
   }
 
+  // Owners can only start a new block on a fully free (green) day — a
+  // pending request should be confirmed or declined, not built over.
+  function isDayClickable(iso: string, status: DayStatus) {
+    if (isPast(iso) || status === "red") return false;
+    if (isOwner) return status === "green";
+    return true;
+  }
+
   function handleDayClick(iso: string, status: DayStatus) {
-    if (isOwner || isPast(iso) || status === "red") return;
+    if (!isDayClickable(iso, status)) return;
     setError(null);
     setNotice(null);
 
@@ -177,12 +211,12 @@ export default function AvailabilityCalendar({
       return;
     }
 
-    // Reject a range that crosses a red (confirmed) day.
+    // Reject a range that crosses a red (unbookable) day, or — for an
+    // owner starting a new block — an orange (pending request) day too.
     for (const day of eachIsoDayInRange(selectedStart, iso)) {
-      if (getDayStatus(day, ranges) === "red") {
-        setError(
-          t("calendar.overlap")
-        );
+      const dayStatus = getDayStatus(day, ranges);
+      if (dayStatus === "red" || (isOwner && dayStatus === "orange")) {
+        setError(t("calendar.overlap"));
         return;
       }
     }
@@ -218,9 +252,7 @@ export default function AvailabilityCalendar({
 
       if (insertError) throw insertError;
 
-      setNotice(
-        t("calendar.sent")
-      );
+      setNotice(t("calendar.sent"));
       setSelectedStart(null);
       setSelectedEnd(null);
       await loadAvailability();
@@ -230,6 +262,53 @@ export default function AvailabilityCalendar({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleBlockDates() {
+    if (!selectedStart || !selectedEnd) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    const supabase = createClient();
+
+    try {
+      const { error: insertError } = await supabase.from("listing_blocked_dates").insert({
+        listing_id: listingId,
+        start_date: selectedStart,
+        end_date: selectedEnd,
+      });
+
+      if (insertError) throw insertError;
+
+      setNotice(t("calendar.blocked"));
+      setSelectedStart(null);
+      setSelectedEnd(null);
+      await loadAvailability();
+    } catch (err) {
+      console.error("[AvailabilityCalendar] block failed:", err);
+      setError(describeError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUnblock(blockId: string) {
+    setError(null);
+    const supabase = createClient();
+
+    const { error: deleteError } = await supabase
+      .from("listing_blocked_dates")
+      .delete()
+      .eq("id", blockId);
+
+    if (deleteError) {
+      console.error("[AvailabilityCalendar] unblock failed:", deleteError);
+      setError(describeError(deleteError));
+      return;
+    }
+
+    await loadAvailability();
   }
 
   async function handleOwnerAction(
@@ -287,6 +366,10 @@ export default function AvailabilityCalendar({
         </div>
       </div>
 
+      {isOwner && (
+        <p className="mt-1 text-xs text-muted">{t("calendar.blockedLegend")}</p>
+      )}
+
       <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted">
         {weekdayLabels.map((label) => (
           <div key={label}>{label}</div>
@@ -302,6 +385,7 @@ export default function AvailabilityCalendar({
           const iso = toISODate(date);
           const status = getDayStatus(iso, ranges);
           const past = isPast(iso);
+          const clickable = isDayClickable(iso, status);
           const isSelected =
             selectedStart &&
             iso >= selectedStart &&
@@ -312,14 +396,14 @@ export default function AvailabilityCalendar({
             : status === "red"
               ? "bg-red-100 text-red-800 cursor-not-allowed"
               : status === "orange"
-                ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                ? `bg-amber-100 text-amber-800 ${clickable ? "hover:bg-amber-200" : "cursor-not-allowed"}`
                 : "bg-green-100 text-green-800 hover:bg-green-200";
 
           return (
             <button
               key={iso}
               type="button"
-              disabled={isOwner || past || status === "red"}
+              disabled={!clickable}
               onClick={() => handleDayClick(iso, status)}
               className={`flex h-9 items-center justify-center rounded-lg text-xs font-medium transition-colors disabled:cursor-not-allowed ${colorClasses} ${
                 isSelected ? "ring-2 ring-accent ring-offset-1" : ""
@@ -355,7 +439,7 @@ export default function AvailabilityCalendar({
         <p className="mt-3 text-xs font-medium text-green-700">{notice}</p>
       )}
 
-      {!isOwner && selectedStart && (
+      {selectedStart && (
         <div className="mt-4 rounded-xl border border-border bg-subtle p-3.5">
           <p className="text-xs text-muted">
             {t("calendar.selected")}{" "}
@@ -367,7 +451,20 @@ export default function AvailabilityCalendar({
             </span>
           </p>
 
-          {!currentUserId ? (
+          {isOwner ? (
+            <button
+              type="button"
+              disabled={!selectedEnd || isSubmitting}
+              onClick={handleBlockDates}
+              className="mt-3 h-10 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
+            >
+              {isSubmitting
+                ? t("common.saving")
+                : selectedEnd
+                  ? t("calendar.block")
+                  : t("calendar.chooseEnd")}
+            </button>
+          ) : !currentUserId ? (
             <Link
               href={`/login?next=/listings/${listingSlug}`}
               className="mt-3 flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover"
@@ -447,6 +544,35 @@ export default function AvailabilityCalendar({
                     {reservation.status === "pending" ? t("common.decline") : t("common.cancel")}
                   </button>
                 </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {isOwner && blockedDates.length > 0 && (
+        <div className="mt-5 border-t border-border pt-4">
+          <h4 className="text-xs font-semibold text-ink">
+            {t("calendar.blockedDates")}
+          </h4>
+          <ul className="mt-2 flex flex-col gap-2">
+            {blockedDates.map((block) => (
+              <li
+                key={block.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"
+              >
+                <p className="text-xs text-muted">
+                  {fromISODate(block.start_date).toLocaleDateString(locale)}
+                  {block.end_date !== block.start_date &&
+                    ` → ${fromISODate(block.end_date).toLocaleDateString(locale)}`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleUnblock(block.id)}
+                  className="shrink-0 rounded-lg bg-subtle px-2.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-border"
+                >
+                  {t("calendar.unblock")}
+                </button>
               </li>
             ))}
           </ul>

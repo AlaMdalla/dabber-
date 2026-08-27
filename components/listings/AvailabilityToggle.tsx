@@ -28,14 +28,23 @@ export default function AvailabilityToggle({
     setError(null);
 
     const supabase = createClient();
-    const { error: updateError } = await supabase
+    // .select() forces Supabase to hand back the updated row. Without it, an
+    // update that RLS silently blocks (0 rows matched) returns no error at
+    // all — the button would look like it saved while nothing changed.
+    const { data, error: updateError } = await supabase
       .from("listings")
       .update({ availability: nextValue })
-      .eq("id", listingId);
+      .eq("id", listingId)
+      .select("id")
+      .single();
 
-    if (updateError) {
+    if (updateError || !data) {
       console.error("[AvailabilityToggle] update failed:", updateError);
-      setError(t("listing.availabilityUpdateFailed", { error: describeError(updateError) }));
+      setError(
+        t("listing.availabilityUpdateFailed", {
+          error: updateError ? describeError(updateError) : "not updated",
+        })
+      );
       setIsUpdating(false);
       return;
     }
