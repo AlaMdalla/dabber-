@@ -30,6 +30,31 @@ export interface ListingWithOwner extends Listing {
   profiles: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
 }
 
+export type ReservationStatus = "pending" | "confirmed" | "cancelled";
+
+export interface Reservation {
+  id: string;
+  listing_id: string;
+  renter_id: string;
+  start_date: string;
+  end_date: string;
+  status: ReservationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReservationWithRenter extends Reservation {
+  profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
+}
+
+/** Row from the public `listing_availability` view: renter-identity-free. */
+export interface AvailabilityRange {
+  listing_id: string;
+  start_date: string;
+  end_date: string;
+  status: Exclude<ReservationStatus, "cancelled">;
+}
+
 export interface Conversation {
   id: string;
   user_a_id: string;

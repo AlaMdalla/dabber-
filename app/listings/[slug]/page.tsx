@@ -11,6 +11,7 @@ import { SITE_URL } from "@/lib/constants";
 import { headers } from "next/headers";
 import DeleteListingButton from "@/components/listings/DeleteListingButton";
 import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
+import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
 import StartConversationForm from "@/components/messages/StartConversationForm";
 
 const getListing = cache(async (slug: string) => {
@@ -107,7 +108,13 @@ export default async function ListingDetailPage({
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // JSON.stringify does not escape "<", so a listing name/description
+        // containing "</script>" would otherwise break out of this tag and
+        // execute as HTML. Escaping "<" to a unicode sequence keeps the JSON
+        // valid while preventing that injection.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div>
@@ -198,6 +205,15 @@ export default async function ListingDetailPage({
               <DeleteListingButton listingId={listing.id} />
             </div>
           )}
+
+          <div className="mt-4">
+            <AvailabilityCalendar
+              listingId={listing.id}
+              listingSlug={listing.slug}
+              isOwner={isOwner}
+              currentUserId={userData.user?.id ?? null}
+            />
+          </div>
 
           {!isOwner && (
             <div className="mt-4">
