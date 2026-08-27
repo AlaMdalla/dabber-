@@ -55,25 +55,26 @@ export default async function ConversationPage({
   const whatsappNumber = other?.whatsapp_number?.replace(/\D/g, "");
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-3xl flex-col px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center gap-3 border-b border-border py-4">
+    <div className="mx-auto flex h-[calc(100vh-4.5rem)] w-full max-w-3xl flex-col px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-3 border-b border-border bg-white/95 py-3.5 backdrop-blur">
         <Link
           href="/messages"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label={t("common.back")}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
-          <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+          <ArrowLeft className="h-4.5 w-4.5 rtl:rotate-180" aria-hidden="true" />
         </Link>
         <Link
           href={`/profiles/${otherId}`}
           aria-label={t("messages.viewProfile", { name: other?.full_name ?? t("common.user") })}
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {other?.avatar_url ? (
             <Image
               src={other.avatar_url}
               alt=""
-              width={36}
-              height={36}
+              width={40}
+              height={40}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -94,9 +95,9 @@ export default async function ConversationPage({
             target="_blank"
             rel="noreferrer"
             aria-label={t("messages.contactWhatsapp")}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
           >
-            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            <MessageCircle className="h-4.5 w-4.5" aria-hidden="true" />
           </a>
         )}
       </div>

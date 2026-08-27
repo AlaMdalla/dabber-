@@ -2,18 +2,30 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "@/components/i18n/LocalizedLink";
 import { redirect } from "next/navigation";
-import { Paperclip, User as UserIcon } from "lucide-react";
+import { MessageCircle, Paperclip, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import EmptyState from "@/components/ui/EmptyState";
 import type { ConversationWithDetails, MessageWithListing } from "@/lib/supabase/types";
-import { getServerI18n } from "@/lib/i18n/server";
+import { getServerI18n, getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 export const metadata: Metadata = {
   title: "Messages",
   robots: { index: false, follow: false },
 };
 
+function formatTimestamp(isoDate: string, locale: Locale) {
+  const date = new Date(isoDate);
+  const now = new Date();
+  const isSameDay = date.toDateString() === now.toDateString();
+
+  return isSameDay
+    ? new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(date)
+    : new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(date);
+}
+
 export default async function MessagesPage() {
+  const locale = await getLocale();
   const { t } = await getServerI18n();
   const supabase = await createClient();
   const {
@@ -53,23 +65,33 @@ export default async function MessagesPage() {
     : { data: [] as MessageWithListing[] };
 
   const lastMessageByConversation = new Map<string, MessageWithListing>();
+  const unreadByConversation = new Map<string, number>();
   for (const message of recentMessages ?? []) {
     if (!lastMessageByConversation.has(message.conversation_id)) {
       lastMessageByConversation.set(message.conversation_id, message);
+    }
+    if (message.recipient_id === user.id && !message.read_at) {
+      unreadByConversation.set(
+        message.conversation_id,
+        (unreadByConversation.get(message.conversation_id) ?? 0) + 1,
+      );
     }
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold tracking-tight text-ink">Messages</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">{t("nav.messages")}</h1>
 
       {conversations && conversations.length > 0 ? (
-        <ul className="mt-6 flex flex-col gap-3">
+        <ul className="mt-6 flex flex-col gap-2">
           {conversations.map((conversation) => {
             const isUserA = conversation.user_a_id === user.id;
             const other = isUserA ? conversation.user_b : conversation.user_a;
             const lastMessage = lastMessageByConversation.get(conversation.id);
             const otherName = other?.full_name ?? t("listing.dabberUser");
+            const unreadCount = unreadByConversation.get(conversation.id) ?? 0;
+            const isUnread = unreadCount > 0;
+            const isLastMessageMine = lastMessage?.sender_id === user.id;
 
             return (
               <li key={conversation.id}>
@@ -77,13 +99,13 @@ export default async function MessagesPage() {
                   href={`/messages/${conversation.id}`}
                   className="flex items-center gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
                     {other?.avatar_url ? (
                       <Image
                         src={other.avatar_url}
                         alt=""
                         fill
-                        sizes="48px"
+                        sizes="56px"
                         className="object-cover"
                       />
                     ) : (
@@ -91,18 +113,49 @@ export default async function MessagesPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink">
-                      {otherName}
-                    </p>
-                    {lastMessage && (
-                      <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted">
-                        {lastMessage.listing_id && (
-                          <Paperclip className="h-3 w-3 shrink-0" aria-hidden="true" />
-                        )}
-                        {lastMessage.listing_id
-                          ? lastMessage.listings?.name ?? t("common.listing")
-                          : lastMessage.body}
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p
+                        className={`truncate text-sm ${
+                          isUnread ? "font-bold text-ink" : "font-semibold text-ink"
+                        }`}
+                      >
+                        {otherName}
                       </p>
+                      {lastMessage && (
+                        <span
+                          className={`shrink-0 text-xs ${
+                            isUnread ? "font-semibold text-ink" : "text-muted"
+                          }`}
+                        >
+                          {formatTimestamp(lastMessage.created_at, locale)}
+                        </span>
+                      )}
+                    </div>
+                    {lastMessage && (
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <p
+                          className={`flex min-w-0 items-center gap-1 truncate text-xs ${
+                            isUnread ? "font-medium text-ink" : "text-muted"
+                          }`}
+                        >
+                          {isLastMessageMine && (
+                            <span className="shrink-0 text-muted">{t("messages.you")}</span>
+                          )}
+                          {lastMessage.listing_id && (
+                            <Paperclip className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          )}
+                          <span className="truncate">
+                            {lastMessage.listing_id
+                              ? lastMessage.listings?.name ?? t("common.listing")
+                              : lastMessage.body}
+                          </span>
+                        </p>
+                        {isUnread && (
+                          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold leading-none text-ink">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </Link>
@@ -113,6 +166,7 @@ export default async function MessagesPage() {
       ) : (
         <div className="mt-8">
           <EmptyState
+            icon={MessageCircle}
             title={t("messages.empty")}
             description={t("messages.emptyDescription")}
           />

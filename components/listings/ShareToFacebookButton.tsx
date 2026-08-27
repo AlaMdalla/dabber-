@@ -30,10 +30,19 @@ export default function ShareToFacebookButton({
     window.open(sharerUrl, "_blank", "noopener,noreferrer,width=600,height=640");
   }
 
-  async function handleCopy() {
+  async function copyCaption() {
     await navigator.clipboard.writeText(caption);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleCopy() {
+    await copyCaption();
+  }
+
+  function handleGroupShare() {
+    window.open(FACEBOOK_GROUP_URL, "_blank", "noopener,noreferrer");
+    void copyCaption();
   }
 
   return (
@@ -64,15 +73,14 @@ export default function ShareToFacebookButton({
           {copied ? t("share.copied") : t("share.copy")}
         </button>
 
-        <a
-          href={FACEBOOK_GROUP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={handleGroupShare}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          {t("share.group")}
-        </a>
+          {copied ? t("share.copied") : t("share.group")}
+        </button>
       </div>
     </div>
   );

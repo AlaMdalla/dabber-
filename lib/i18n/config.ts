@@ -2,13 +2,13 @@ export const locales = ["fr", "ar", "en"] as const;
 
 export type Locale = (typeof locales)[number];
 
-export const defaultLocale: Locale = "fr";
+export const defaultLocale: Locale = "ar";
 export const localeCookieName = "dabber-locale";
 export const localeHeaderName = "x-dabber-locale";
 
 export const localeNames: Record<Locale, string> = {
   fr: "Français",
-  ar: "العربية",
+  ar: "تونسي",
   en: "English",
 };
 

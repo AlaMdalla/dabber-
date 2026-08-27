@@ -6,6 +6,7 @@ import LocaleProvider from "@/components/i18n/LocaleProvider";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getLocale } from "@/lib/i18n/server";
+import { defaultLocale } from "@/lib/i18n/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     alternates: {
       canonical: `/${locale}`,
-      languages: { fr: "/fr", ar: "/ar", en: "/en", "x-default": "/fr" },
+      languages: { fr: "/fr", ar: "/ar", en: "/en", "x-default": `/${defaultLocale}` },
     },
     openGraph: {
       title,
