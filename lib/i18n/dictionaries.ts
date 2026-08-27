@@ -115,6 +115,24 @@ const fr = {
   "meta.home.description": "Publiez votre matériel à louer en quelques minutes, ou trouvez ce qu’il vous faut près de chez vous. Calendrier, demandes et disponibilités, partout en Tunisie.",
   "meta.listings.title": "Matériel à louer en Tunisie — Toutes les annonces",
   "meta.listings.description": "Louez du matériel audiovisuel, événementiel, camping et plus, partout en Tunisie. Filtrez par gouvernorat, catégorie et dates de disponibilité.",
+  "nav.admin": "Administration",
+  "admin.overview": "Vue d’ensemble",
+  "admin.users": "Utilisateurs",
+  "admin.listings": "Annonces",
+  "admin.reservations": "Réservations",
+  "admin.dashboardDescription": "Gérez les utilisateurs, les annonces et les réservations.",
+  "admin.totalUsers": "Utilisateurs",
+  "admin.totalListings": "Annonces",
+  "admin.totalReservations": "Réservations",
+  "admin.searchUsers": "Rechercher un utilisateur…",
+  "admin.searchListings": "Rechercher une annonce…",
+  "admin.noUsers": "Aucun utilisateur",
+  "admin.noListings": "Aucune annonce",
+  "admin.noReservations": "Aucune réservation",
+  "admin.owner": "Propriétaire",
+  "admin.renter": "Locataire",
+  "admin.viewProfile": "Voir le profil",
+  "admin.viewListing": "Voir l’annonce",
 } as const;
 
 export type TranslationKey = string;
@@ -141,6 +159,7 @@ const en: Dictionary = {
   "notifications.description": "Responses and changes concerning your bookings.", "notifications.user": "A user", "notifications.aListing": "a listing", "notifications.requested": "{actor} sent a booking request for {listing}.", "notifications.confirmed": "{actor} accepted your request for {listing}.", "notifications.declined": "{actor} declined your request for {listing}.", "notifications.renterCancelled": "{actor} cancelled their request for {listing}.", "notifications.ownerCancelled": "{actor} cancelled the booking for {listing}.", "notifications.empty": "No notifications", "notifications.emptyDescription": "Responses to your requests will appear here.",
   "messages.empty": "No conversations", "messages.emptyDescription": "Contact an owner from a listing to start a conversation.", "messages.viewProfile": "View {name}’s profile", "messages.contactWhatsapp": "Contact on WhatsApp", "messages.write": "Write a message…", "messages.sendWhatsapp": "Send this message via WhatsApp", "messages.contact": "Contact {name}", "messages.loginDescription": "Sign in to send a message to the owner.", "messages.interested": "Hello, I’m interested in your listing…", "messages.sendMessage": "Send message", "messages.viaWhatsapp": "Send via WhatsApp", "messages.profileGreeting": "Hello, I’m contacting you from your Dabber profile.", "messages.you": "You: ", "messages.today": "Today", "messages.yesterday": "Yesterday", "messages.noMessagesYet": "No messages yet", "messages.noMessagesYetDescription": "Send a message to start the conversation.", "messages.unread": "{count} unread",
   "profile.title": "User profile", "profile.memberSince": "Member since {date}", "profile.listings": "{name}’s listings", "profile.noListings": "This user has no active listings.",
+  "nav.admin": "Admin", "admin.overview": "Overview", "admin.users": "Users", "admin.listings": "Listings", "admin.reservations": "Reservations", "admin.dashboardDescription": "Manage users, listings and reservations.", "admin.totalUsers": "Users", "admin.totalListings": "Listings", "admin.totalReservations": "Reservations", "admin.searchUsers": "Search a user…", "admin.searchListings": "Search a listing…", "admin.noUsers": "No users", "admin.noListings": "No listings", "admin.noReservations": "No reservations", "admin.owner": "Owner", "admin.renter": "Renter", "admin.viewProfile": "View profile", "admin.viewListing": "View listing",
 };
 
 const ar: Dictionary = {
@@ -164,6 +183,7 @@ const ar: Dictionary = {
   "notifications.description": "الردود والتغييرات اللي تخص حجوزاتك.", "notifications.user": "مستخدم", "notifications.aListing": "إعلان", "notifications.requested": "{actor} بعث طلب حجز لـ {listing}.", "notifications.confirmed": "{actor} قبل طلبك لـ {listing}.", "notifications.declined": "{actor} رفض طلبك لـ {listing}.", "notifications.renterCancelled": "{actor} لغى طلبو لـ {listing}.", "notifications.ownerCancelled": "{actor} لغى حجز {listing}.", "notifications.empty": "ماعندكش إشعارات", "notifications.emptyDescription": "الردود على طلباتك باش يبانوا هوني.",
   "messages.empty": "ماعندكش محادثات", "messages.emptyDescription": "تواصل مع صاحب معدّة من صفحة إعلان باش تبدا محادثة.", "messages.viewProfile": "شوف بروفايل {name}", "messages.contactWhatsapp": "تواصل عبر واتساب", "messages.write": "اكتب مسج…", "messages.sendWhatsapp": "ابعث هذا المسج عبر واتساب", "messages.contact": "تواصل مع {name}", "messages.loginDescription": "ادخل باش تبعث مسج لصاحب المعدّة.", "messages.interested": "أهلا، تعجبني هالحاجة اللي عرضتها…", "messages.sendMessage": "ابعث المسج", "messages.viaWhatsapp": "ابعث عبر واتساب", "messages.profileGreeting": "أهلا، نتواصل معاك من البروفايل متاعك في دبّر.", "messages.you": "أنت: ", "messages.today": "اليوم", "messages.yesterday": "البارح", "messages.noMessagesYet": "ماعندكش مسجات توا", "messages.noMessagesYetDescription": "ابعث مسج باش تبدا المحادثة.", "messages.unread": "{count} جديد",
   "profile.title": "بروفايل المستخدم", "profile.memberSince": "عضو من {date}", "profile.listings": "إعلانات {name}", "profile.noListings": "هذا المستخدم ماعندوش إعلانات توا.",
+  "nav.admin": "الإدارة", "admin.overview": "نظرة عامة", "admin.users": "المستخدمين", "admin.listings": "الإعلانات", "admin.reservations": "الحجوزات", "admin.dashboardDescription": "دير في المستخدمين، الإعلانات، والحجوزات.", "admin.totalUsers": "المستخدمين", "admin.totalListings": "الإعلانات", "admin.totalReservations": "الحجوزات", "admin.searchUsers": "لوّج على مستخدم…", "admin.searchListings": "لوّج على إعلان…", "admin.noUsers": "ماعندكش مستخدمين", "admin.noListings": "ماعندكش إعلانات", "admin.noReservations": "ماعندكش حجوزات", "admin.owner": "صاحب المعدّة", "admin.renter": "المستأجر", "admin.viewProfile": "شوف البروفايل", "admin.viewListing": "شوف الإعلان",
 };
 
 const dictionaries: Record<Locale, Dictionary> = { fr, ar, en };

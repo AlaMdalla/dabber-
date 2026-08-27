@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Bell, CalendarDays, Menu, MessageCircle, User as UserIcon, X } from "lucide-react";
+import { Bell, CalendarDays, Menu, MessageCircle, ShieldCheck, User as UserIcon, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import Link from "@/components/i18n/LocalizedLink";
@@ -27,6 +27,7 @@ export default function Header() {
   } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -41,11 +42,19 @@ export default function Header() {
         setUnreadCount(0);
         setNotificationUnreadCount(0);
         setProfile(null);
+        setIsAdmin(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+    supabase.rpc("is_admin").then(({ data }) => setIsAdmin(Boolean(data)));
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -242,6 +251,15 @@ export default function Header() {
                     </span>
                   )}
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    aria-label={t("nav.admin")}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                  >
+                    <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                  </Link>
+                )}
               </div>
               <Link
                 href="/account"
@@ -351,6 +369,15 @@ export default function Header() {
                 >
                   {t("nav.messages")}{unreadCount > 0 ? ` (${unreadCount})` : ""}
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    {t("nav.admin")}
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   onClick={() => setIsMenuOpen(false)}

@@ -146,3 +146,23 @@ export interface ConversationWithDetails extends Conversation {
   user_a: Pick<Profile, "full_name" | "avatar_url"> | null;
   user_b: Pick<Profile, "full_name" | "avatar_url"> | null;
 }
+
+/** Row shown on the admin users list. */
+export type AdminUserRow = Pick<
+  Profile,
+  "id" | "full_name" | "avatar_url" | "email" | "whatsapp_number" | "created_at"
+>;
+
+/** Row shown on the admin listings list. */
+export type AdminListingRow = Pick<
+  Listing,
+  "id" | "slug" | "name" | "governorate" | "category_slug" | "price_per_day" | "availability" | "created_at"
+> & {
+  profiles: Pick<Profile, "full_name"> | null;
+};
+
+/** Row shown on the admin reservations list. */
+export interface AdminReservationRow extends Reservation {
+  listings: Pick<Listing, "id" | "name" | "slug" | "owner_id"> | null;
+  profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
+}
