@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, MessageCircle, User as UserIcon, X } from "lucide-react";
+import { Bell, CalendarDays, Menu, MessageCircle, User as UserIcon, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
-  { label: "Explorer", href: "/listings" },
+  { label: "Trouver du matériel", href: "/listings" },
   { label: "Catégories", href: "/#categories" },
   { label: "Comment ça marche", href: "/#comment-ca-marche" },
-  { label: "Pour les professionnels", href: "/professionals" },
+  { label: "Pourquoi Dabber", href: "/#confiance" },
 ];
 
 export default function Header() {
@@ -22,6 +22,7 @@ export default function Header() {
     avatar_url: string | null;
   } | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -34,6 +35,7 @@ export default function Header() {
       setUser(session?.user ?? null);
       if (!session?.user) {
         setUnreadCount(0);
+        setNotificationUnreadCount(0);
         setProfile(null);
       }
     });
@@ -63,6 +65,65 @@ export default function Header() {
 
     return () => {
       window.removeEventListener("dabber:profile-updated", handleProfileUpdated);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+
+    async function refreshNotificationCount() {
+      const { count } = await supabase
+        .from("reservation_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user!.id)
+        .is("read_at", null);
+      setNotificationUnreadCount(count ?? 0);
+    }
+
+    void refreshNotificationCount();
+
+    const channel = supabase
+      .channel(`reservation-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reservation_notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => void refreshNotificationCount(),
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void refreshNotificationCount();
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn(`[Header] reservation notification channel: ${status}`);
+        }
+      });
+
+    const handleNotificationsRead = () => void refreshNotificationCount();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshNotificationCount();
+      }
+    };
+    const refreshInterval = window.setInterval(
+      () => void refreshNotificationCount(),
+      15_000,
+    );
+    window.addEventListener("dabber:notifications-read", handleNotificationsRead);
+    window.addEventListener("focus", handleNotificationsRead);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener("dabber:notifications-read", handleNotificationsRead);
+      window.removeEventListener("focus", handleNotificationsRead);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void supabase.removeChannel(channel);
     };
   }, [user]);
 
@@ -142,6 +203,29 @@ export default function Header() {
           {user ? (
             <>
               <Link
+                href="/notifications"
+                aria-label={
+                  notificationUnreadCount > 0
+                    ? `Notifications, ${notificationUnreadCount} non lues`
+                    : "Notifications"
+                }
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              >
+                <Bell className="h-5 w-5" aria-hidden="true" />
+                {notificationUnreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/reservations"
+                aria-label="Mes réservations"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              >
+                <CalendarDays className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <Link
                 href="/messages"
                 aria-label={unreadCount > 0 ? `Messages, ${unreadCount} non lus` : "Messages"}
                 className="relative flex h-9 w-9 items-center justify-center rounded-xl text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
@@ -192,7 +276,7 @@ export default function Header() {
             href="/listings/new"
             className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
-            Publier une offre
+            Louer mon matériel
           </Link>
         </div>
 
@@ -235,6 +319,23 @@ export default function Header() {
             {user ? (
               <>
                 <Link
+                  href="/notifications"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Notifications
+                  {notificationUnreadCount > 0
+                    ? ` (${notificationUnreadCount})`
+                    : ""}
+                </Link>
+                <Link
+                  href="/reservations"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  Mes réservations
+                </Link>
+                <Link
                   href="/messages"
                   onClick={() => setIsMenuOpen(false)}
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -270,7 +371,7 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
               className="rounded-xl bg-accent px-3 py-3 text-center text-sm font-semibold text-ink hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              Publier une offre
+              Louer mon matériel
             </Link>
           </div>
         </nav>

@@ -2,11 +2,12 @@ import { Suspense } from "react";
 import HeroSection from "@/components/home/HeroSection";
 import CategorySection from "@/components/home/CategorySection";
 import FeaturedListings from "@/components/home/FeaturedListings";
-import FeaturedBusinesses from "@/components/home/FeaturedBusinesses";
 import HowItWorks from "@/components/home/HowItWorks";
 import TrustSection from "@/components/home/TrustSection";
 import ProfessionalCTA from "@/components/home/ProfessionalCTA";
+import FAQSection from "@/components/home/FAQSection";
 import ListingCardSkeleton from "@/components/ui/ListingCardSkeleton";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 
 function FeaturedListingsFallback() {
   return (
@@ -25,16 +26,34 @@ function FeaturedListingsFallback() {
 }
 
 export default function Home() {
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${SITE_URL}/listings?query={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <HeroSection />
       <CategorySection />
       <Suspense fallback={<FeaturedListingsFallback />}>
         <FeaturedListings />
       </Suspense>
-      <FeaturedBusinesses />
       <HowItWorks />
       <TrustSection />
+      <FAQSection />
       <ProfessionalCTA />
     </>
   );

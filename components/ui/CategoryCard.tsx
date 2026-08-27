@@ -12,11 +12,11 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/listings?category=${category.slug}`}
-      className="group flex flex-col justify-between rounded-2xl border border-border bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      className="group flex flex-col justify-between border-t border-border bg-white py-5 transition-colors hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-1"
     >
       <div>
         <div className="flex items-center justify-between">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-subtle text-ink group-hover:bg-accent/20">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fff4bf] text-ink transition-transform group-hover:-rotate-3 motion-reduce:transition-none">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
           <ArrowRight
@@ -33,7 +33,9 @@ export default function CategoryCard({ category }: CategoryCardProps) {
         )}
       </div>
       <p className="mt-4 text-xs font-medium text-muted">
-        {category.listingCount} annonces
+        {category.listingCount > 0
+          ? `${category.listingCount} annonce${category.listingCount > 1 ? "s" : ""}`
+          : "Explorer la catégorie"}
       </p>
     </Link>
   );

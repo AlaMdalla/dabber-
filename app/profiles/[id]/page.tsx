@@ -10,7 +10,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { Listing, Profile } from "@/lib/supabase/types";
+import type { ListingSummary, Profile } from "@/lib/supabase/types";
 
 export const metadata: Metadata = {
   title: "Profil utilisateur",
@@ -32,10 +32,10 @@ export default async function PublicProfilePage({
       >(),
     supabase
       .from("listings")
-      .select("*")
+      .select("id, slug, name, image_url, price_per_day, governorate")
       .eq("owner_id", id)
       .order("created_at", { ascending: false })
-      .returns<Listing[]>(),
+      .returns<ListingSummary[]>(),
     supabase.auth.getUser(),
   ]);
 

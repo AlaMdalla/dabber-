@@ -22,14 +22,14 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    "Trouvez des produits et équipements disponibles à la location auprès de professionnels en Tunisie.",
+    "Louez du matériel près de chez vous en Tunisie. Consultez les disponibilités, choisissez vos dates et suivez votre demande sur Dabber.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "Dabber — Trouvez du matériel à louer en Tunisie",
     description:
-      "Trouvez des produits et équipements disponibles à la location auprès de professionnels en Tunisie.",
+      "Trouvez du matériel à louer en Tunisie, choisissez vos dates et envoyez votre demande au propriétaire.",
     url: SITE_URL,
     siteName: SITE_NAME,
     locale: "fr_FR",

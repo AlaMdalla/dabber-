@@ -1,43 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ImageOff } from "lucide-react";
-import type { ListingWithOwner } from "@/lib/supabase/types";
+import { ArrowUpRight, ImageOff, MapPin } from "lucide-react";
+import type { ListingCardData } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
 
 interface ListingCardProps {
-  listing: ListingWithOwner;
+  listing: ListingCardData;
 }
 
 export default function ListingCard({ listing }: ListingCardProps) {
   const isAvailable = listing.availability === "disponible";
-  const [isFavorite, setIsFavorite] = useState(false);
   const categoryName =
     categories.find((category) => category.slug === listing.category_slug)
       ?.name ?? listing.category_slug;
   const posterName = listing.profiles?.full_name ?? "Utilisateur Dabber";
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-white transition-shadow hover:shadow-md">
-      <button
-        type="button"
-        aria-pressed={isFavorite}
-        aria-label={
-          isFavorite
-            ? `Retirer ${listing.name} des favoris`
-            : `Ajouter ${listing.name} aux favoris`
-        }
-        onClick={() => setIsFavorite((value) => !value)}
-        className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-      >
-        <Heart
-          className={`h-4 w-4 ${isFavorite ? "fill-ink" : ""}`}
-          aria-hidden="true"
-        />
-      </button>
-
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-white transition-all hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none">
       <Link
         href={`/listings/${listing.slug}`}
         className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -60,13 +41,17 @@ export default function ListingCard({ listing }: ListingCardProps) {
           <span className="absolute left-3 top-3 rounded-full bg-ink px-2.5 py-1 text-xs font-medium text-white">
             {categoryName}
           </span>
+          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </span>
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-4">
           <h3 className="text-sm font-semibold text-ink">
             {listing.name}
           </h3>
-          <p className="text-xs text-muted">
+          <p className="flex items-center gap-1 text-xs text-muted">
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {listing.governorate} · {posterName}
           </p>
 

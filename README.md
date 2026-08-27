@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Google authentication
+
+The login page supports Google OAuth through Supabase Auth. To enable it:
+
+1. In Google Cloud Console, create an OAuth 2.0 Web application and add the Supabase callback URL shown under **Supabase Dashboard → Authentication → Providers → Google** (normally `https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI.
+2. In **Supabase Dashboard → Authentication → Providers → Google**, enable Google and enter the Google client ID and client secret.
+3. In **Supabase Dashboard → Authentication → URL Configuration**, set the production Site URL and add local/production app callback URLs, such as `http://localhost:3000/auth/callback` and `https://your-domain.com/auth/callback`, to Redirect URLs.
+
+Google credentials belong in the Supabase dashboard, not in this repository. The app only needs its existing `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` variables.
+
 ## Getting Started
 
 First, run the development server:

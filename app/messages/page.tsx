@@ -33,12 +33,20 @@ export default async function MessagesPage() {
 
   const conversationIds = (conversations ?? []).map((conversation) => conversation.id);
 
+  // Only the single most recent message per conversation is rendered below.
+  // A plain `.in()` query can't express "top 1 per group" in one round trip,
+  // so this caps total rows instead of fetching every message ever sent
+  // across every one of the user's conversations. A user would need over
+  // 300 messages more recent than a given conversation's last one for that
+  // conversation to lose its preview here — see the audit notes for the
+  // exact `DISTINCT ON` fix if that starts happening in practice.
   const { data: recentMessages } = conversationIds.length
     ? await supabase
         .from("messages")
         .select("*, listings(name, slug, image_url, price_per_day, description)")
         .in("conversation_id", conversationIds)
         .order("created_at", { ascending: false })
+        .limit(300)
         .returns<MessageWithListing[]>()
     : { data: [] as MessageWithListing[] };
 

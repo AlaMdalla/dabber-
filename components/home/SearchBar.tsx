@@ -2,15 +2,30 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { CalendarPlus, Search } from "lucide-react";
 import { governorates } from "@/data/governorates";
 
-export default function SearchBar() {
+interface SearchBarProps {
+  initialQuery?: string;
+  initialLocation?: string;
+  initialStartDate?: string;
+  initialEndDate?: string;
+  showSupportingPoints?: boolean;
+}
+
+export default function SearchBar({
+  initialQuery = "",
+  initialLocation = "",
+  initialStartDate = "",
+  initialEndDate = "",
+  showSupportingPoints = false,
+}: SearchBarProps) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [location, setLocation] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [query, setQuery] = useState(initialQuery);
+  const [location, setLocation] = useState(initialLocation);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [showDates, setShowDates] = useState(Boolean(initialStartDate || initialEndDate));
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -29,7 +44,8 @@ export default function SearchBar() {
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
 
-    router.push(`/listings?${params.toString()}`);
+    const search = params.toString();
+    router.push(search ? `/listings?${search}` : "/listings");
   }
 
   return (
@@ -37,7 +53,7 @@ export default function SearchBar() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5 lg:grid-cols-[2fr_1.4fr_1fr_1fr_auto] lg:items-end lg:gap-3"
+        className="grid grid-cols-1 gap-3 rounded-2xl border border-white/20 bg-white p-4 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:grid-cols-2 sm:p-5 lg:grid-cols-[2fr_1.35fr_1fr_1fr_auto] lg:items-end"
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="query" className="text-xs font-semibold text-ink">
@@ -74,32 +90,45 @@ export default function SearchBar() {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="startDate" className="text-xs font-semibold text-ink">
-            Du
-          </label>
-          <input
-            id="startDate"
-            name="startDate"
-            type="date"
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-            className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowDates((visible) => !visible)}
+          aria-expanded={showDates}
+          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold text-ink sm:col-span-2 lg:hidden"
+        >
+          <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+          {showDates ? "Masquer les dates" : "Ajouter mes dates"}
+        </button>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="endDate" className="text-xs font-semibold text-ink">
-            Au
-          </label>
-          <input
-            id="endDate"
-            name="endDate"
-            type="date"
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
-            className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
+        <div className={`${showDates ? "grid" : "hidden"} grid-cols-2 gap-3 sm:col-span-2 lg:contents`}>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="startDate" className="text-xs font-semibold text-ink">
+              Du
+            </label>
+            <input
+              id="startDate"
+              name="startDate"
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+              className="h-12 min-w-0 rounded-xl border border-border px-3 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="endDate" className="text-xs font-semibold text-ink">
+              Au
+            </label>
+            <input
+              id="endDate"
+              name="endDate"
+              type="date"
+              min={startDate || undefined}
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+              className="h-12 min-w-0 rounded-xl border border-border px-3 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+          </div>
         </div>
 
         <button
@@ -120,13 +149,11 @@ export default function SearchBar() {
         )}
       </form>
 
-      <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-white/80 sm:justify-start">
-        <li>Professionnels locaux</li>
-        <li className="hidden sm:inline">·</li>
-        <li>Disponibilités vérifiables</li>
-        <li className="hidden sm:inline">·</li>
-        <li>Contact direct</li>
-      </ul>
+      {showSupportingPoints && (
+        <p className="mt-3 text-center text-xs text-white/55">
+          Particuliers et professionnels · Demande sans paiement en ligne
+        </p>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ImageOff, MapPin, User as UserIcon } from "lucide-react";
+import { MapPin, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingWithOwner } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
@@ -12,13 +12,14 @@ import { headers } from "next/headers";
 import DeleteListingButton from "@/components/listings/DeleteListingButton";
 import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
 import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
+import ListingGallery from "@/components/listings/ListingGallery";
 import StartConversationForm from "@/components/messages/StartConversationForm";
 
 const getListing = cache(async (slug: string) => {
   const supabase = await createClient();
   const { data: listing } = await supabase
     .from("listings")
-    .select("*, profiles(full_name, avatar_url, whatsapp_number)")
+    .select("*, profiles(full_name, avatar_url, whatsapp_number), listing_images(*)")
     .eq("slug", slug)
     .single<ListingWithOwner>();
   return listing;
@@ -78,6 +79,20 @@ export default async function ListingDetailPage({
     categories.find((category) => category.slug === listing.category_slug)
       ?.name ?? listing.category_slug;
   const posterName = listing.profiles?.full_name ?? "Utilisateur Dabber";
+  const galleryImages = [...(listing.listing_images ?? [])].sort(
+    (a, b) => a.position - b.position,
+  );
+
+  if (galleryImages.length === 0 && listing.image_url) {
+    galleryImages.push({
+      id: `cover-${listing.id}`,
+      listing_id: listing.id,
+      image_url: listing.image_url,
+      storage_path: null,
+      position: 0,
+      created_at: listing.created_at,
+    });
+  }
 
   const headersList = await headers();
   const host = headersList.get("host");
@@ -118,22 +133,7 @@ export default async function ListingDetailPage({
       />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_1fr]">
         <div>
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-subtle">
-            {listing.image_url ? (
-              <Image
-                src={listing.image_url}
-                alt={listing.name}
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted">
-                <ImageOff className="h-10 w-10" aria-hidden="true" />
-              </div>
-            )}
-          </div>
+          <ListingGallery images={galleryImages} listingName={listing.name} />
 
           {listing.description && (
             <div className="mt-6">

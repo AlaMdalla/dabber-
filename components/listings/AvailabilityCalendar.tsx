@@ -65,6 +65,7 @@ function buildMonthGrid(year: number, month: number) {
 const STATUS_LABEL: Record<ReservationStatus, string> = {
   pending: "En attente",
   confirmed: "Confirmée",
+  declined: "Refusée",
   cancelled: "Annulée",
 };
 
@@ -115,7 +116,7 @@ export default function AvailabilityCalendar({
           listing_id: r.listing_id,
           start_date: r.start_date,
           end_date: r.end_date,
-          status: r.status as Exclude<ReservationStatus, "cancelled">,
+          status: r.status as "pending" | "confirmed",
         })),
       };
     }
@@ -233,7 +234,7 @@ export default function AvailabilityCalendar({
 
   async function handleOwnerAction(
     reservationId: string,
-    status: "confirmed" | "cancelled"
+    status: "confirmed" | "declined" | "cancelled"
   ) {
     setError(null);
     const supabase = createClient();
@@ -435,7 +436,12 @@ export default function AvailabilityCalendar({
                   )}
                   <button
                     type="button"
-                    onClick={() => handleOwnerAction(reservation.id, "cancelled")}
+                      onClick={() =>
+                        handleOwnerAction(
+                          reservation.id,
+                          reservation.status === "pending" ? "declined" : "cancelled",
+                        )
+                      }
                     className="rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-medium text-red-800 transition-colors hover:bg-red-200"
                   >
                     {reservation.status === "pending" ? "Refuser" : "Annuler"}

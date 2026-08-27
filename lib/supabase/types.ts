@@ -26,11 +26,42 @@ export interface Listing {
   updated_at: string;
 }
 
-export interface ListingWithOwner extends Listing {
-  profiles: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
+export interface ListingImage {
+  id: string;
+  listing_id: string;
+  image_url: string;
+  storage_path: string | null;
+  position: number;
+  created_at: string;
 }
 
-export type ReservationStatus = "pending" | "confirmed" | "cancelled";
+export interface ListingWithOwner extends Listing {
+  profiles: Pick<Profile, "full_name" | "avatar_url" | "whatsapp_number"> | null;
+  listing_images?: ListingImage[];
+}
+
+/** Columns ListingCard renders. Feed queries select only these instead of `*`. */
+export type ListingCardData = Pick<
+  Listing,
+  | "id"
+  | "slug"
+  | "name"
+  | "image_url"
+  | "price_per_day"
+  | "availability"
+  | "governorate"
+  | "category_slug"
+> & {
+  profiles: Pick<Profile, "full_name"> | null;
+};
+
+/** Columns the account/profile "my listings" links render. */
+export type ListingSummary = Pick<
+  Listing,
+  "id" | "slug" | "name" | "image_url" | "price_per_day" | "governorate"
+>;
+
+export type ReservationStatus = "pending" | "confirmed" | "declined" | "cancelled";
 
 export interface Reservation {
   id: string;
@@ -47,12 +78,32 @@ export interface ReservationWithRenter extends Reservation {
   profiles: Pick<Profile, "full_name" | "avatar_url"> | null;
 }
 
+export interface ReservationWithListing extends Reservation {
+  listings: Pick<Listing, "id" | "name" | "slug" | "image_url" | "owner_id"> | null;
+}
+
+export type ReservationNotificationType =
+  | "reservation_requested"
+  | "reservation_confirmed"
+  | "reservation_declined"
+  | "reservation_cancelled";
+
+export interface ReservationNotification {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  reservation_id: string;
+  type: ReservationNotificationType;
+  created_at: string;
+  read_at: string | null;
+}
+
 /** Row from the public `listing_availability` view: renter-identity-free. */
 export interface AvailabilityRange {
   listing_id: string;
   start_date: string;
   end_date: string;
-  status: Exclude<ReservationStatus, "cancelled">;
+  status: "pending" | "confirmed";
 }
 
 export interface Conversation {

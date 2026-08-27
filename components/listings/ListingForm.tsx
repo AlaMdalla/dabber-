@@ -1,21 +1,27 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uniqueSlug } from "@/lib/slugify";
 import { describeError } from "@/lib/supabase/errorMessage";
 import { categories } from "@/data/categories";
 import { governorates } from "@/data/governorates";
-import type { Availability, Listing } from "@/lib/supabase/types";
+import type { Availability, Listing, ListingImage } from "@/lib/supabase/types";
 
 interface ListingFormProps {
   ownerId: string;
   listing?: Listing;
+  listingImages?: ListingImage[];
 }
 
 const LISTING_IMAGES_PUBLIC_PATH =
   "/storage/v1/object/public/listing-images/";
+const MAX_LISTING_IMAGES = 5;
+const MAX_SOURCE_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function getListingImagePath(publicUrl: string) {
   try {
@@ -32,7 +38,50 @@ function getListingImagePath(publicUrl: string) {
   }
 }
 
-export default function ListingForm({ ownerId, listing }: ListingFormProps) {
+async function compressListingImage(file: File) {
+  if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Utilisez une image JPEG, PNG ou WebP.");
+  }
+  if (file.size > MAX_SOURCE_IMAGE_SIZE) {
+    throw new Error("Chaque photo doit faire moins de 10 Mo.");
+  }
+
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(
+    1,
+    MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height),
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    bitmap.close();
+    throw new Error("Impossible de préparer cette image.");
+  }
+
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/webp", 0.82),
+  );
+
+  if (!blob) {
+    throw new Error("Impossible de compresser cette image.");
+  }
+
+  return new File([blob], `${crypto.randomUUID()}.webp`, {
+    type: "image/webp",
+  });
+}
+
+export default function ListingForm({
+  ownerId,
+  listing,
+  listingImages = [],
+}: ListingFormProps) {
   const router = useRouter();
   const isEditing = Boolean(listing);
 
@@ -52,9 +101,46 @@ export default function ListingForm({ ownerId, listing }: ListingFormProps) {
   const [availability, setAvailability] = useState<Availability>(
     listing?.availability ?? "disponible"
   );
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const initialImages = listingImages.length > 0
+    ? [...listingImages].sort((a, b) => a.position - b.position)
+    : listing?.image_url
+      ? [{
+          id: `legacy-${listing.id}`,
+          listing_id: listing.id,
+          image_url: listing.image_url,
+          storage_path: getListingImagePath(listing.image_url),
+          position: 0,
+          created_at: listing.created_at,
+        }]
+      : [];
+  const [existingImages, setExistingImages] = useState<ListingImage[]>(initialImages);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const availableSlots = MAX_LISTING_IMAGES - existingImages.length - imageFiles.length;
+
+    if (selectedFiles.length > availableSlots) {
+      setError(`Vous pouvez ajouter au maximum ${MAX_LISTING_IMAGES} photos.`);
+      event.target.value = "";
+      return;
+    }
+
+    const invalidFile = selectedFiles.find(
+      (file) => !SUPPORTED_IMAGE_TYPES.has(file.type) || file.size > MAX_SOURCE_IMAGE_SIZE,
+    );
+    if (invalidFile) {
+      setError("Utilisez des images JPEG, PNG ou WebP de moins de 10 Mo.");
+      event.target.value = "";
+      return;
+    }
+
+    setError(null);
+    setImageFiles((current) => [...current, ...selectedFiles]);
+    event.target.value = "";
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,24 +148,45 @@ export default function ListingForm({ ownerId, listing }: ListingFormProps) {
     setError(null);
 
     const supabase = createClient();
+    const uploadedPaths: string[] = [];
+    let destinationSlug = listing?.slug ?? "";
+    let createdListingId: string | null = null;
+    let shouldRestoreExistingGallery = false;
 
     try {
-      let imageUrl = listing?.image_url ?? null;
+      const listingId = listing?.id ?? crypto.randomUUID();
+      const uploadedImages: Array<{ image_url: string; storage_path: string }> = [];
 
-      if (imageFile) {
-        const path = `${ownerId}/${Date.now()}-${imageFile.name}`;
+      for (const imageFile of imageFiles) {
+        const compressedImage = await compressListingImage(imageFile);
+        const path = `${ownerId}/${listingId}/${compressedImage.name}`;
         const { error: uploadError } = await supabase.storage
           .from("listing-images")
-          .upload(path, imageFile);
+          .upload(path, compressedImage, {
+            cacheControl: "31536000",
+            contentType: compressedImage.type,
+          });
 
         if (uploadError) {
           console.error("[ListingForm] image upload failed:", uploadError);
           throw new Error(`Envoi de la photo : ${describeError(uploadError)}`);
         }
 
-        imageUrl = supabase.storage.from("listing-images").getPublicUrl(path)
-          .data.publicUrl;
+        uploadedPaths.push(path);
+        uploadedImages.push({
+          image_url: supabase.storage.from("listing-images").getPublicUrl(path)
+            .data.publicUrl,
+          storage_path: path,
+        });
       }
+
+      const finalImages = [
+        ...existingImages.map((image) => ({
+          image_url: image.image_url,
+          storage_path: image.storage_path,
+        })),
+        ...uploadedImages,
+      ];
 
       const payload = {
         name: name.trim(),
@@ -88,7 +195,7 @@ export default function ListingForm({ ownerId, listing }: ListingFormProps) {
         governorate,
         price_per_day: pricePerDay ? Number(pricePerDay) : null,
         availability,
-        image_url: imageUrl,
+        image_url: finalImages[0]?.image_url ?? null,
       };
 
       if (isEditing && listing) {
@@ -102,41 +209,104 @@ export default function ListingForm({ ownerId, listing }: ListingFormProps) {
           throw new Error(`Mise à jour : ${describeError(updateError)}`);
         }
 
-        if (imageFile && listing.image_url && listing.image_url !== imageUrl) {
-          const previousImagePath = getListingImagePath(listing.image_url);
-
-          if (previousImagePath) {
-            const { error: removeError } = await supabase.storage
-              .from("listing-images")
-              .remove([previousImagePath]);
-
-            if (removeError) {
-              // The listing already points to the new image, so do not fail the
-              // saved update if cleanup of the old file is unsuccessful.
-              console.warn(
-                "[ListingForm] old image cleanup failed:",
-                removeError
-              );
-            }
-          }
-        }
-
-        router.push(`/listings/${listing.slug}`);
       } else {
         const slug = uniqueSlug(name);
+        destinationSlug = slug;
         const { error: insertError } = await supabase
           .from("listings")
-          .insert({ ...payload, slug, owner_id: ownerId });
+          .insert({ ...payload, id: listingId, slug, owner_id: ownerId });
 
         if (insertError) {
           console.error("[ListingForm] insert failed:", insertError);
           throw new Error(`Création de l'annonce : ${describeError(insertError)}`);
         }
-        router.push(`/listings/${slug}`);
+        createdListingId = listingId;
       }
+
+      const { error: clearImagesError } = await supabase
+        .from("listing_images")
+        .delete()
+        .eq("listing_id", listingId);
+
+      if (clearImagesError) {
+        throw new Error(`Mise à jour des photos : ${describeError(clearImagesError)}`);
+      }
+      shouldRestoreExistingGallery = Boolean(listing);
+
+      if (finalImages.length > 0) {
+        const { error: imageRowsError } = await supabase
+          .from("listing_images")
+          .insert(finalImages.map((image, position) => ({
+            listing_id: listingId,
+            image_url: image.image_url,
+            storage_path: image.storage_path,
+            position,
+          })));
+
+        if (imageRowsError) {
+          throw new Error(`Mise à jour des photos : ${describeError(imageRowsError)}`);
+        }
+      }
+      shouldRestoreExistingGallery = false;
+
+      const keptUrls = new Set(existingImages.map((image) => image.image_url));
+      const removedPaths = initialImages
+        .filter((image) => !keptUrls.has(image.image_url))
+        .map((image) => image.storage_path ?? getListingImagePath(image.image_url))
+        .filter((path): path is string => Boolean(path));
+
+      if (removedPaths.length > 0) {
+        const { error: removeError } = await supabase.storage
+          .from("listing-images")
+          .remove(removedPaths);
+        if (removeError) {
+          console.warn("[ListingForm] removed image cleanup failed:", removeError);
+        }
+      }
+
+      router.push(`/listings/${destinationSlug}`);
 
       router.refresh();
     } catch (err) {
+      if (listing && shouldRestoreExistingGallery) {
+        const originalRows = initialImages.map((image, position) => ({
+          listing_id: listing.id,
+          image_url: image.image_url,
+          storage_path: image.storage_path,
+          position,
+        }));
+        const { error: coverRollbackError } = await supabase
+          .from("listings")
+          .update({ image_url: listing.image_url })
+          .eq("id", listing.id);
+        const { error: galleryRollbackError } = originalRows.length > 0
+          ? await supabase.from("listing_images").insert(originalRows)
+          : { error: null };
+
+        if (coverRollbackError || galleryRollbackError) {
+          console.warn(
+            "[ListingForm] gallery rollback failed:",
+            coverRollbackError ?? galleryRollbackError,
+          );
+        }
+      }
+      if (createdListingId) {
+        const { error: rollbackError } = await supabase
+          .from("listings")
+          .delete()
+          .eq("id", createdListingId);
+        if (rollbackError) {
+          console.warn("[ListingForm] failed listing rollback failed:", rollbackError);
+        }
+      }
+      if (uploadedPaths.length > 0) {
+        const { error: cleanupError } = await supabase.storage
+          .from("listing-images")
+          .remove(uploadedPaths);
+        if (cleanupError) {
+          console.warn("[ListingForm] failed upload cleanup failed:", cleanupError);
+        }
+      }
       console.error("[ListingForm] submit failed:", err);
       setError(describeError(err));
       setIsSaving(false);
@@ -257,17 +427,54 @@ export default function ListingForm({ ownerId, listing }: ListingFormProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="image" className="text-xs font-semibold text-ink">
-          Photo {isEditing && listing?.image_url ? "(optionnel)" : ""}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="images" className="text-xs font-semibold text-ink">
+          Photos ({existingImages.length + imageFiles.length}/{MAX_LISTING_IMAGES})
         </label>
         <input
-          id="image"
+          id="images"
           type="file"
-          accept="image/*"
-          onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          disabled={existingImages.length + imageFiles.length >= MAX_LISTING_IMAGES}
+          onChange={handleImageSelection}
           className="rounded-xl border border-border px-3.5 py-2.5 text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-subtle file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         />
+        <p className="text-xs text-muted">
+          Jusqu’à 5 images JPEG, PNG ou WebP. Elles sont redimensionnées et compressées avant l’envoi.
+        </p>
+
+        {(existingImages.length > 0 || imageFiles.length > 0) && (
+          <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {existingImages.map((image, index) => (
+              <div key={image.id} className="rounded-xl border border-border p-2">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-subtle">
+                  <Image src={image.image_url} alt="" fill sizes="180px" className="object-cover" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExistingImages((current) => current.filter((item) => item.id !== image.id))}
+                  className="mt-2 w-full text-xs font-medium text-red-600"
+                >
+                  Supprimer{index === 0 ? " (couverture)" : ""}
+                </button>
+              </div>
+            ))}
+            {imageFiles.map((file, index) => (
+              <div key={`${file.name}-${file.lastModified}-${index}`} className="rounded-xl border border-border p-2">
+                <p className="truncate text-xs font-medium text-ink">{file.name}</p>
+                <p className="mt-1 text-xs text-muted">Nouvelle photo</p>
+                <button
+                  type="button"
+                  onClick={() => setImageFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                  className="mt-2 text-xs font-medium text-red-600"
+                >
+                  Retirer
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {error && (

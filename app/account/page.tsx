@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { Listing, Profile } from "@/lib/supabase/types";
+import type { ListingSummary, Profile } from "@/lib/supabase/types";
 import ProfileForm from "@/components/account/ProfileForm";
 import SignOutButton from "@/components/account/SignOutButton";
 
@@ -27,10 +27,10 @@ export default async function AccountPage() {
     supabase.from("profiles").select("*").eq("id", user.id).single<Profile>(),
     supabase
       .from("listings")
-      .select("*")
+      .select("id, slug, name, image_url, price_per_day, governorate")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false })
-      .returns<Listing[]>(),
+      .returns<ListingSummary[]>(),
   ]);
 
   return (
