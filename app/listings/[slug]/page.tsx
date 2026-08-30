@@ -126,6 +126,7 @@ export default async function ListingDetailPage({
 
   const listingsIndexUrl = `${protocol}://${host}${localizePath("/listings", locale)}`;
   const homeUrl = `${protocol}://${host}${localizePath("/", locale)}`;
+  const canonicalListingUrl = `${SITE_URL}${localizePath(`/listings/${listing.slug}`, locale)}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -292,7 +293,7 @@ export default async function ListingDetailPage({
               name={listing.name}
               pricePerDay={listing.price_per_day}
               governorate={listing.governorate}
-              url={listingUrl}
+              url={canonicalListingUrl}
             />
           </div>
         </div>
