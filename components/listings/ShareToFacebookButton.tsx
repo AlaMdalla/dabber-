@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Share2 } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useI18n } from "@/components/i18n/LocaleProvider";
 import { FACEBOOK_GROUP_URL } from "@/lib/constants";
 
@@ -53,14 +53,6 @@ export default function ShareToFacebookButton({
     window.setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleFacebookShare() {
-    // The listing's Open Graph metadata supplies Facebook with its title,
-    // description, image and URL. Facebook then lets the person choose the
-    // Dabber group and publish from their signed-in profile.
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(shareUrl, "_blank", "noopener,noreferrer,width=680,height=720");
-  }
-
   async function handleGroupShare() {
     setPreparing(true);
     setCopyError(false);
@@ -69,19 +61,22 @@ export default function ShareToFacebookButton({
     // clipboard promise resolves. The copied URL makes Facebook build the full
     // product card from the listing's Open Graph metadata when it is pasted.
     const groupTab = window.open("about:blank", "_blank");
+    let didCopy = false;
 
     try {
       await copyCaption();
+      didCopy = true;
+    } catch {
+      setCopyError(true);
+    } finally {
+      // Opening the group must not depend on clipboard permission. Browsers
+      // embedded inside social apps commonly block both clipboard APIs.
       if (groupTab) {
         groupTab.opener = null;
         groupTab.location.replace(FACEBOOK_GROUP_URL);
-      } else {
+      } else if (didCopy) {
         window.location.assign(FACEBOOK_GROUP_URL);
       }
-    } catch {
-      groupTab?.close();
-      setCopyError(true);
-    } finally {
       setPreparing(false);
     }
   }
@@ -91,10 +86,6 @@ export default function ShareToFacebookButton({
       <h3 className="text-sm font-semibold text-ink">
         {t("share.title")}
       </h3>
-      <p className="mt-1 text-xs text-muted">
-        {t("share.description")}
-      </p>
-
       <ol className="mt-3 list-decimal space-y-1 ps-4 text-xs text-muted">
         <li>{t("share.stepCopy")}</li>
         <li>{t("share.stepPaste")}</li>
@@ -102,12 +93,32 @@ export default function ShareToFacebookButton({
       </ol>
 
       {copyError && (
-        <p className="mt-3 text-xs font-medium text-red-600" role="alert">
-          {t("share.copyFailed")}
-        </p>
+        <div className="mt-3" role="alert">
+          <p className="text-xs font-medium text-red-600">
+            {t("share.copyFailed")}
+          </p>
+          <label className="mt-2 block text-xs font-semibold text-ink" htmlFor="facebook-caption">
+            {t("share.copy")}
+          </label>
+          <textarea
+            id="facebook-caption"
+            readOnly
+            value={caption}
+            onFocus={(event) => event.currentTarget.select()}
+            className="mt-1 min-h-24 w-full resize-y rounded-xl border border-border bg-subtle p-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
+          <a
+            href={FACEBOOK_GROUP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex text-xs font-semibold text-[#1877F2] underline-offset-2 hover:underline"
+          >
+            {t("share.group")}
+          </a>
+        </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="mt-4">
         <button
           type="button"
           onClick={handleGroupShare}
@@ -116,15 +127,6 @@ export default function ShareToFacebookButton({
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           {preparing ? t("share.preparing") : copied ? t("share.copied") : t("share.group")}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleFacebookShare}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-        >
-          <Share2 className="h-4 w-4" aria-hidden="true" />
-          {t("share.facebook")}
         </button>
       </div>
     </div>
