@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <LocaleProvider locale={locale} dictionary={dictionary}>
+        <LocaleProvider key={locale} locale={locale} dictionary={dictionary}>
           <Header />
           <main className="flex flex-1 flex-col">{children}</main>
           <Footer />

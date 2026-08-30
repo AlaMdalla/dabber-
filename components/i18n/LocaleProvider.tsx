@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { Locale } from "@/lib/i18n/config";
 import {
   getDictionary,
@@ -28,16 +28,11 @@ export default function LocaleProvider({
   children: ReactNode;
 }) {
   const [activeLocale, setActiveLocale] = useState(locale);
-  const [activeDictionary, setActiveDictionary] = useState(dictionary);
-
-  useEffect(() => {
-    setActiveLocale(locale);
-    setActiveDictionary(dictionary);
-  }, [dictionary, locale]);
+  const activeDictionary =
+    activeLocale === locale ? dictionary : getDictionary(activeLocale);
 
   function changeLocale(nextLocale: Locale) {
     setActiveLocale(nextLocale);
-    setActiveDictionary(getDictionary(nextLocale));
     document.documentElement.lang = nextLocale;
     document.documentElement.dir = nextLocale === "ar" ? "rtl" : "ltr";
   }
