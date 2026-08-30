@@ -7,11 +7,13 @@ import { MapPin, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingCommentWithAuthor, ListingWithOwner } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
-import { SITE_URL } from "@/lib/constants";
+import { SITE_URL, SITE_NAME } from "@/lib/constants";
 import { headers } from "next/headers";
 import DeleteListingButton from "@/components/listings/DeleteListingButton";
 import AvailabilityToggle from "@/components/listings/AvailabilityToggle";
-import ShareToFacebookButton from "@/components/listings/ShareToFacebookButton";
+import FacebookShareButton from "@/components/share/FacebookShareButton";
+import PublishToFacebookGroupButton from "@/components/share/PublishToFacebookGroupButton";
+import CopyLinkButton from "@/components/share/CopyLinkButton";
 import AvailabilityCalendar from "@/components/listings/AvailabilityCalendar";
 import ListingGallery from "@/components/listings/ListingGallery";
 import StartConversationForm from "@/components/messages/StartConversationForm";
@@ -71,9 +73,12 @@ export async function generateMetadata({
       title,
       description,
       url,
+      siteName: SITE_NAME,
       type: "website",
       locale: locale === "fr" ? "fr_FR" : locale === "ar" ? "ar_TN" : "en_US",
-      images: listing.image_url ? [{ url: listing.image_url }] : undefined,
+      // Facebook needs a real image URL to render a preview — never leave
+      // this undefined, fall back to the site's default social image.
+      images: [{ url: listing.image_url ?? `${SITE_URL}/opengraph-image`, alt: listing.name }],
     },
   };
 }
@@ -126,7 +131,32 @@ export default async function ListingDetailPage({
 
   const listingsIndexUrl = `${protocol}://${host}${localizePath("/listings", locale)}`;
   const homeUrl = `${protocol}://${host}${localizePath("/", locale)}`;
+  // Shared with Facebook/social crawlers, so this must be the stable
+  // production origin — not the request host, which can be a preview
+  // deployment or localhost.
   const canonicalListingUrl = `${SITE_URL}${localizePath(`/listings/${listing.slug}`, locale)}`;
+
+  const groupPostDescription =
+    listing.description && listing.description.length > 0
+      ? listing.description.length > 160
+        ? `${listing.description.slice(0, 157)}…`
+        : listing.description
+      : null;
+  const groupPostText = [
+    `🏠 ${listing.name}`,
+    [
+      listing.governorate ? `📍 ${listing.governorate}` : null,
+      listing.price_per_day !== null
+        ? `💰 ${t("common.priceDay", { price: listing.price_per_day })}`
+        : null,
+    ]
+      .filter((line): line is string => Boolean(line))
+      .join("\n"),
+    groupPostDescription,
+    `${t("share.groupPostCta")}\n${canonicalListingUrl}`,
+  ]
+    .filter((block): block is string => Boolean(block && block.length > 0))
+    .join("\n\n");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -288,13 +318,21 @@ export default async function ListingDetailPage({
             </div>
           )}
 
-          <div className="mt-4">
-            <ShareToFacebookButton
-              name={listing.name}
-              pricePerDay={listing.price_per_day}
-              governorate={listing.governorate}
-              url={canonicalListingUrl}
-            />
+          <div className="mt-4 rounded-2xl border border-border bg-white p-5">
+            <h3 className="text-sm font-semibold text-ink">{t("share.sectionTitle")}</h3>
+            <p className="mt-3 text-xs font-semibold text-ink">
+              {t("share.instructionsTitle")}
+            </p>
+            <ol className="mt-2 list-decimal space-y-1.5 ps-5 text-xs leading-5 text-muted">
+              <li>{t("share.instructionCopy")}</li>
+              <li>{t("share.instructionOpen")}</li>
+              <li>{t("share.instructionPaste")}</li>
+            </ol>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <PublishToFacebookGroupButton postText={groupPostText} />
+              <FacebookShareButton url={canonicalListingUrl} title={listing.name} />
+              <CopyLinkButton url={canonicalListingUrl} />
+            </div>
           </div>
         </div>
 

@@ -24,6 +24,33 @@ export async function proxy(request: NextRequest) {
 
   const locale = localeFromPathname(pathname);
 
+  // Recovery emails can land on the configured Site URL when Supabase does
+  // not accept the requested callback URL. Forward codes arriving on the
+  // localized home page through the normal PKCE callback, then open the
+  // password form. Restrict this fallback to the locale root so regular app
+  // query parameters named `code` are unaffected.
+  const authCode = request.nextUrl.searchParams.get("code");
+  if (locale && pathname === `/${locale}` && authCode) {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = "/auth/callback";
+    callbackUrl.search = "";
+    callbackUrl.searchParams.set("code", authCode);
+    callbackUrl.searchParams.set("next", `/${locale}/reset-password`);
+    callbackUrl.hash = "";
+    return NextResponse.redirect(callbackUrl);
+  }
+
+  // Supabase may fall back to the configured Site URL when a recovery link is
+  // expired or its redirect URL is not allow-listed. Route those errors to the
+  // localized auth error page instead of silently rendering the home page.
+  if (locale && request.nextUrl.searchParams.has("error")) {
+    const authErrorUrl = request.nextUrl.clone();
+    authErrorUrl.pathname = `/${locale}/auth/auth-code-error`;
+    authErrorUrl.search = "";
+    authErrorUrl.hash = "";
+    return NextResponse.redirect(authErrorUrl);
+  }
+
   if (!locale) {
     const cookieLocale = request.cookies.get(localeCookieName)?.value;
     const preferredLocale = isLocale(cookieLocale)

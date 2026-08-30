@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import LocaleProvider from "@/components/i18n/LocaleProvider";
+import Toaster from "@/components/ui/Toaster";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getLocale } from "@/lib/i18n/server";
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={locale}
       dir={locale === "ar" ? "rtl" : "ltr"}
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -60,6 +62,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Header />
           <main className="flex flex-1 flex-col">{children}</main>
           <Footer />
+          <Toaster />
         </LocaleProvider>
       </body>
     </html>
