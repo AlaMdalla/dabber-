@@ -93,19 +93,19 @@ export default function ShareToFacebookButton({
       </ol>
 
       {copyError && (
-        <div className="mt-3" role="alert">
-          <p className="text-xs font-medium text-red-600">
-            {t("share.copyFailed")}
-          </p>
-          <label className="mt-2 block text-xs font-semibold text-ink" htmlFor="facebook-caption">
+        <div className="mt-3 rounded-xl border border-border bg-subtle p-3">
+          <label className="block text-xs font-semibold text-ink" htmlFor="facebook-caption">
             {t("share.copy")}
           </label>
+          <p className="mt-1 text-xs text-muted">
+            {t("share.stepPaste")}
+          </p>
           <textarea
             id="facebook-caption"
             readOnly
             value={caption}
             onFocus={(event) => event.currentTarget.select()}
-            className="mt-1 min-h-24 w-full resize-y rounded-xl border border-border bg-subtle p-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-2 min-h-24 w-full resize-y rounded-xl border border-border bg-white p-3 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <a
             href={FACEBOOK_GROUP_URL}

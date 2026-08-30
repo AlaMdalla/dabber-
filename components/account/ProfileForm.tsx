@@ -15,6 +15,27 @@ interface ProfileFormProps {
 
 const AVATAR_IMAGES_PUBLIC_PATH = "/storage/v1/object/public/avatar-images/";
 
+const COUNTRY_CODES = [
+  { code: "+216", label: "Tunisie" },
+  { code: "+213", label: "Algérie" },
+  { code: "+218", label: "Libye" },
+  { code: "+212", label: "Maroc" },
+  { code: "+33", label: "France" },
+  { code: "+39", label: "Italie" },
+  { code: "+49", label: "Allemagne" },
+  { code: "+32", label: "Belgique" },
+] as const;
+
+function splitWhatsappNumber(value: string | null) {
+  const compact = value?.replace(/[\s()-]/g, "") ?? "";
+  const country = COUNTRY_CODES.find(({ code }) => compact.startsWith(code));
+
+  return {
+    countryCode: country?.code ?? "+216",
+    localNumber: country ? compact.slice(country.code.length) : compact.replace(/^\+/, ""),
+  };
+}
+
 function getAvatarImagePath(publicUrl: string) {
   try {
     const url = new URL(publicUrl);
@@ -34,7 +55,9 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
   const { t } = useI18n();
   const router = useRouter();
   const [fullName, setFullName] = useState(profile.full_name ?? "");
-  const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsapp_number ?? "");
+  const initialWhatsapp = splitWhatsappNumber(profile.whatsapp_number);
+  const [countryCode, setCountryCode] = useState(initialWhatsapp.countryCode);
+  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsapp.localNumber);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,7 +82,8 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
     setStatus("idle");
     setErrorMessage(null);
 
-    const normalizedWhatsapp = whatsappNumber.replace(/[\s()-]/g, "");
+    const localWhatsapp = whatsappNumber.replace(/\D/g, "");
+    const normalizedWhatsapp = localWhatsapp ? `${countryCode}${localWhatsapp}` : "";
     if (normalizedWhatsapp && !/^\+[1-9]\d{7,14}$/.test(normalizedWhatsapp)) {
       setIsSaving(false);
       setErrorMessage(t("account.whatsappInvalid"));
@@ -185,18 +209,32 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
         <label htmlFor="whatsapp_number" className="text-xs font-semibold text-ink">
           {t("account.whatsapp")}
         </label>
-        <input
-          id="whatsapp_number"
-          name="whatsapp_number"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          value={whatsappNumber}
-          onChange={(event) => setWhatsappNumber(event.target.value)}
-          placeholder="+21620123456"
-          aria-describedby="whatsapp-help"
-          className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        />
+        <div className="flex gap-2">
+          <select
+            value={countryCode}
+            onChange={(event) => setCountryCode(event.target.value as typeof countryCode)}
+            aria-label={`${t("account.whatsapp")} — country code`}
+            className="h-12 max-w-40 rounded-xl border border-border bg-white px-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            {COUNTRY_CODES.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.label} {country.code}
+              </option>
+            ))}
+          </select>
+          <input
+            id="whatsapp_number"
+            name="whatsapp_number"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            value={whatsappNumber}
+            onChange={(event) => setWhatsappNumber(event.target.value)}
+            placeholder="20 123 456"
+            aria-describedby="whatsapp-help"
+            className="h-12 min-w-0 flex-1 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
+        </div>
         <p id="whatsapp-help" className="text-xs text-muted">
           {t("account.whatsappHelp")}
         </p>
