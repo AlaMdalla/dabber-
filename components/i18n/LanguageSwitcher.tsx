@@ -1,7 +1,7 @@
 "use client";
 
 import { Languages } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useI18n } from "@/components/i18n/LocaleProvider";
 import {
   localeCookieName,
@@ -13,17 +13,17 @@ import {
 } from "@/lib/i18n/config";
 
 export default function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, t } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   function changeLocale(nextLocale: Locale) {
-    setLocale(nextLocale);
     document.cookie = `${localeCookieName}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
     const query = searchParams.toString();
     const path = `${stripLocaleFromPathname(pathname)}${query ? `?${query}` : ""}`;
-    router.push(localizePath(path, nextLocale));
+    // Server components and client components must change language together.
+    // A full localized navigation prevents a temporary mixed-language page.
+    window.location.assign(localizePath(path, nextLocale));
   }
 
   return (

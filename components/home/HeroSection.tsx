@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "@/components/i18n/LocalizedLink";
 import { Camera, CircleDollarSign, Search } from "lucide-react";
-import { getServerI18n } from "@/lib/i18n/server";
+import { useI18n } from "@/components/i18n/LocaleProvider";
 
 const PREVIEW_DAYS = [
   { day: 12, status: "green" as const },
@@ -18,7 +20,7 @@ const STATUS_CLASSES = {
   red: "bg-red-100 text-red-800",
 };
 
-function CalendarPreviewCard({ t }: { t: Awaited<ReturnType<typeof getServerI18n>>["t"] }) {
+function CalendarPreviewCard({ t }: { t: ReturnType<typeof useI18n>["t"] }) {
   return (
     <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
       <p className="text-xs font-semibold text-muted">
@@ -52,8 +54,8 @@ function CalendarPreviewCard({ t }: { t: Awaited<ReturnType<typeof getServerI18n
   );
 }
 
-export default async function HeroSection() {
-  const { t } = await getServerI18n();
+export default function HeroSection() {
+  const { t } = useI18n();
   const ownerPoints = [
     { icon: Camera, text: t("home.hero.pointPhotos") },
     { icon: CircleDollarSign, text: t("home.hero.pointPrice") },
