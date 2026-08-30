@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Locale } from "@/lib/i18n/config";
 import {
+  getDictionary,
   translate,
   type Dictionary,
   type TranslationKey,
@@ -11,6 +12,7 @@ import {
 interface LocaleContextValue {
   locale: Locale;
   dictionary: Dictionary;
+  setLocale: (locale: Locale) => void;
   t: (key: TranslationKey, values?: Record<string, string | number>) => string;
 }
 
@@ -25,13 +27,29 @@ export default function LocaleProvider({
   dictionary: Dictionary;
   children: ReactNode;
 }) {
+  const [activeLocale, setActiveLocale] = useState(locale);
+  const [activeDictionary, setActiveDictionary] = useState(dictionary);
+
+  useEffect(() => {
+    setActiveLocale(locale);
+    setActiveDictionary(dictionary);
+  }, [dictionary, locale]);
+
+  function changeLocale(nextLocale: Locale) {
+    setActiveLocale(nextLocale);
+    setActiveDictionary(getDictionary(nextLocale));
+    document.documentElement.lang = nextLocale;
+    document.documentElement.dir = nextLocale === "ar" ? "rtl" : "ltr";
+  }
+
   const value = useMemo<LocaleContextValue>(
     () => ({
-      locale,
-      dictionary,
-      t: (key, values) => translate(dictionary, key, values),
+      locale: activeLocale,
+      dictionary: activeDictionary,
+      setLocale: changeLocale,
+      t: (key, values) => translate(activeDictionary, key, values),
     }),
-    [dictionary, locale],
+    [activeDictionary, activeLocale],
   );
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
