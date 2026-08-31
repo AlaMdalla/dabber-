@@ -1,9 +1,11 @@
 -- Run with `supabase test db`. Covers the grouped rental request flow:
 -- submission (with snapshots + idempotency), cross-owner/availability
--- rejection, RLS isolation, and the accept/reject/cancel/complete lifecycle.
+-- rejection, RLS isolation, and the accept/reject/cancel lifecycle. What
+-- happens to an accepted request (handover, active, return, completion)
+-- is covered separately in rental_handover.test.sql.
 begin;
 create extension if not exists pgtap;
-select plan(37);
+select plan(34);
 
 -- Sets both the legacy per-claim and current JSON-blob JWT GUCs (auth.uid()
 -- reads whichever is present) and switches to the `authenticated` role so
@@ -172,15 +174,6 @@ select lives_ok(
 );
 select public.rls_test_logout();
 select is((select available_quantity from public.listings where id = '24000000-0000-0000-0000-000000000013'), 2, 'accepting decrements stock by the accepted quantity');
-
-select public.rls_test_login('24000000-0000-0000-0000-000000000001');
-select lives_ok(
-  $$select public.complete_rental_request((select id from public.rental_requests where idempotency_key = 'idem-key-accept'))$$,
-  'the owner can complete an accepted request'
-);
-select public.rls_test_logout();
-select is((select available_quantity from public.listings where id = '24000000-0000-0000-0000-000000000013'), 4, 'completing (returning) restores stock');
-select is((select status from public.rental_requests where idempotency_key = 'idem-key-accept'), 'completed', 'completed request is marked completed');
 
 -- Regression: two items in the same request against the same listing (with
 -- different date ranges) must be checked by their COMBINED quantity, not

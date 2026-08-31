@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uniqueSlug } from "@/lib/slugify";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { compressImage, MAX_SOURCE_IMAGE_SIZE, SUPPORTED_IMAGE_TYPES } from "@/lib/imageCompression";
 import { categories } from "@/data/categories";
 import { governorates } from "@/data/governorates";
 import type { Availability, Listing, ListingImage } from "@/lib/supabase/types";
@@ -22,9 +23,6 @@ interface ListingFormProps {
 const LISTING_IMAGES_PUBLIC_PATH =
   "/storage/v1/object/public/listing-images/";
 const MAX_LISTING_IMAGES = 5;
-const MAX_SOURCE_IMAGE_SIZE = 10 * 1024 * 1024;
-const MAX_IMAGE_DIMENSION = 1600;
-const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function getListingImagePath(publicUrl: string) {
   try {
@@ -41,42 +39,12 @@ function getListingImagePath(publicUrl: string) {
   }
 }
 
-async function compressListingImage(file: File, t: (key: string) => string) {
-  if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-    throw new Error(t("form.invalidImageType"));
-  }
-  if (file.size > MAX_SOURCE_IMAGE_SIZE) {
-    throw new Error(t("form.imageTooLarge"));
-  }
-
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(
-    1,
-    MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height),
-  );
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    bitmap.close();
-    throw new Error(t("form.imagePrepare"));
-  }
-
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", 0.82),
-  );
-
-  if (!blob) {
-    throw new Error(t("form.imageCompress"));
-  }
-
-  return new File([blob], `${crypto.randomUUID()}.webp`, {
-    type: "image/webp",
+function compressListingImage(file: File, t: (key: string) => string) {
+  return compressImage(file, {
+    invalidType: t("form.invalidImageType"),
+    tooLarge: t("form.imageTooLarge"),
+    prepareFailed: t("form.imagePrepare"),
+    compressFailed: t("form.imageCompress"),
   });
 }
 

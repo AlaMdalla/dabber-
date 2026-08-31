@@ -13,6 +13,7 @@ const EVENT_KEYS: Record<string, TranslationKey> = {
   rejected: "rentalRequest.eventRejected",
   cancelled: "rentalRequest.eventCancelled",
   completed: "rentalRequest.eventCompleted",
+  active: "rentalRequest.eventActive",
 };
 
 export default function StatusEventPill({ message }: StatusEventPillProps) {

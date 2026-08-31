@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, ImageOff, Truck, MapPin } from "lucide-react";
+import Link from "@/components/i18n/LocalizedLink";
+import { ChevronDown, ChevronUp, ImageOff, Truck, MapPin, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import { durationDays } from "@/lib/rentalPricing";
@@ -18,18 +19,24 @@ interface RentalRequestCardProps {
 
 const STATUS_KEYS: Record<RentalRequestStatus, TranslationKey> = {
   pending: "calendar.pending",
-  accepted: "reservations.confirmedLabel",
+  accepted: "rentalRequest.statusAccepted",
+  active: "rentalRequest.statusActive",
+  return_pending: "rentalRequest.statusReturnPending",
   rejected: "calendar.declined",
   cancelled: "calendar.cancelled",
   completed: "rentalRequest.statusCompleted",
+  disputed: "rentalRequest.statusDisputed",
 };
 
 const STATUS_CLASSES: Record<RentalRequestStatus, string> = {
   pending: "bg-amber-100 text-amber-800",
   accepted: "bg-green-100 text-green-800",
+  active: "bg-blue-100 text-blue-800",
+  return_pending: "bg-amber-100 text-amber-800",
   rejected: "bg-red-100 text-red-800",
   cancelled: "bg-slate-100 text-slate-700",
   completed: "bg-blue-100 text-blue-800",
+  disputed: "bg-red-100 text-red-800",
 };
 
 function formatDate(isoDate: string, locale: Locale) {
@@ -208,16 +215,16 @@ export default function RentalRequestCard({ request, currentUserId }: RentalRequ
           </div>
         )}
 
-        {isOwner && current.status === "accepted" && (
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => runAction("complete_rental_request", t("rentalRequest.confirmComplete"))}
-            className="mt-3 h-9 w-full rounded-lg bg-blue-100 text-xs font-semibold text-blue-800 transition-colors hover:bg-blue-200 disabled:opacity-60"
-          >
-            {t("rentalRequest.markCompleted")}
-          </button>
-        )}
+        {(isOwner || isRenter) &&
+          ["accepted", "active", "return_pending", "completed"].includes(current.status) && (
+            <Link
+              href={`/rentals/${current.id}`}
+              className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-ink text-xs font-semibold text-white transition-colors hover:bg-ink/90"
+            >
+              {t("rentalRequest.viewRental")}
+              <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden="true" />
+            </Link>
+          )}
 
         {canRenterCancel && (
           <button

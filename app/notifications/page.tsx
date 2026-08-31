@@ -78,9 +78,16 @@ function rentalRequestCopy(notification: RentalRequestNotificationRow, t: Transl
       return t("notifications.rentalRequestRejected", { actor: actorName });
     case "rental_request_cancelled":
       return t("notifications.rentalRequestCancelled", { actor: actorName });
-    case "rental_request_completed":
-    default:
-      return t("notifications.rentalRequestCompleted");
+    case "handover_condition_submitted":
+      return t("notifications.handoverConditionSubmitted", { actor: actorName });
+    case "handover_confirmed":
+      return t("notifications.handoverConfirmed", { actor: actorName });
+    case "rental_active":
+      return t("notifications.rentalActive");
+    case "return_condition_submitted":
+      return t("notifications.returnConditionSubmitted", { actor: actorName });
+    case "rental_completed":
+      return t("notifications.rentalCompleted");
   }
 }
 
@@ -130,11 +137,17 @@ export default async function NotificationsPage() {
     }),
     ...(rentalRequestNotifications ?? []).map((notification) => {
       const conversationId = notification.rental_requests?.conversation_id;
+      const isLifecycleUpdate = notification.type !== "rental_request_submitted";
+      const href = isLifecycleUpdate
+        ? `/rentals/${notification.rental_request_id}`
+        : conversationId
+          ? `/messages/${conversationId}`
+          : "/messages";
       return {
         id: `rental-request-${notification.id}`,
         created_at: notification.created_at,
         read_at: notification.read_at,
-        href: conversationId ? `/messages/${conversationId}` : "/messages",
+        href,
         icon: "rental_request" as const,
         copy: rentalRequestCopy(notification, t),
       };

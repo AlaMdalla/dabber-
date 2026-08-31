@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Bell, CalendarDays, Menu, MessageCircle, ShieldCheck, User as UserIcon, X } from "lucide-react";
+import { Bell, CalendarDays, Menu, MessageCircle, Package, ShieldCheck, User as UserIcon, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import Link from "@/components/i18n/LocalizedLink";
@@ -260,6 +260,13 @@ export default function Header() {
                   <CalendarDays className="h-5 w-5" aria-hidden="true" />
                 </Link>
                 <Link
+                  href="/rentals"
+                  aria-label={t("nav.rentals")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                >
+                  <Package className="h-5 w-5" aria-hidden="true" />
+                </Link>
+                <Link
                   href="/messages"
                   aria-label={unreadCount > 0 ? t("nav.unreadMessages", { count: unreadCount }) : t("nav.messages")}
                   className="relative flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
@@ -389,6 +396,13 @@ export default function Header() {
                   className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   {t("nav.reservations")}
+                </Link>
+                <Link
+                  href="/rentals"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-xl px-3 py-3 text-center text-sm font-medium text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  {t("nav.rentals")}
                 </Link>
                 <Link
                   href="/messages"

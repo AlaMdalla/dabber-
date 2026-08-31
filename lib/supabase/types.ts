@@ -142,7 +142,7 @@ export interface Conversation {
 }
 
 export type MessageType = "text" | "rental_request" | "status_event";
-export type StatusEventType = "accepted" | "rejected" | "cancelled" | "completed";
+export type StatusEventType = "accepted" | "rejected" | "cancelled" | "completed" | "active";
 
 export interface Message {
   id: string;
@@ -225,9 +225,12 @@ export type StorefrontListing = Pick<
 export type RentalRequestStatus =
   | "pending"
   | "accepted"
+  | "active"
+  | "return_pending"
+  | "completed"
   | "rejected"
   | "cancelled"
-  | "completed";
+  | "disputed";
 
 export type FulfillmentMethod = "pickup" | "delivery";
 
@@ -250,6 +253,8 @@ export interface RentalRequest {
   rejected_at: string | null;
   cancelled_at: string | null;
   completed_at: string | null;
+  active_at: string | null;
+  return_requested_at: string | null;
 }
 
 export interface RentalRequestItem {
@@ -279,7 +284,11 @@ export type RentalRequestNotificationType =
   | "rental_request_accepted"
   | "rental_request_rejected"
   | "rental_request_cancelled"
-  | "rental_request_completed";
+  | "handover_condition_submitted"
+  | "handover_confirmed"
+  | "rental_active"
+  | "return_condition_submitted"
+  | "rental_completed";
 
 export interface RentalRequestNotification {
   id: string;
@@ -289,4 +298,40 @@ export interface RentalRequestNotification {
   type: RentalRequestNotificationType;
   created_at: string;
   read_at: string | null;
+}
+
+export interface RentalHandover {
+  id: string;
+  rental_request_id: string;
+  code: string;
+  condition_note: string | null;
+  owner_submitted_at: string | null;
+  renter_confirmed_at: string | null;
+  code_confirmed_at: string | null;
+  created_at: string;
+}
+
+export interface RentalHandoverPhoto {
+  id: string;
+  handover_id: string;
+  storage_path: string;
+  position: number;
+  created_at: string;
+}
+
+export interface RentalHandoverWithPhotos extends RentalHandover {
+  rental_handover_photos: RentalHandoverPhoto[];
+}
+
+export type ReturnConditionStatus = "good" | "issue";
+
+export interface RentalReturn {
+  id: string;
+  rental_request_id: string;
+  code: string;
+  condition_status: ReturnConditionStatus | null;
+  note: string | null;
+  owner_submitted_at: string | null;
+  code_confirmed_at: string | null;
+  created_at: string;
 }
