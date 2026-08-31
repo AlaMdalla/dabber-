@@ -2,7 +2,7 @@
 
 import Link from "@/components/i18n/LocalizedLink";
 import Image from "next/image";
-import { ArrowUpRight, ImageOff, MapPin } from "lucide-react";
+import { ArrowUpRight, ImageOff, MapPin, Star } from "lucide-react";
 import type { ListingCardData } from "@/lib/supabase/types";
 import { categories } from "@/data/categories";
 import { useI18n } from "@/components/i18n/LocaleProvider";
@@ -58,6 +58,12 @@ export default function ListingCard({ listing }: ListingCardProps) {
           <p className="flex items-center gap-1 text-xs text-muted">
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {listing.governorate} · {posterName}
+            {listing.reputation && (
+              <span className="ml-1 flex items-center gap-0.5 text-ink">
+                <Star className="h-3.5 w-3.5 fill-accent text-accent" aria-hidden="true" />
+                {listing.reputation.avg_rating.toFixed(1)}
+              </span>
+            )}
           </p>
           <p className="text-xs font-medium text-ink">
             {t("listing.quantityAvailable", {

@@ -6,6 +6,7 @@ import SearchBar from "@/components/home/SearchBar";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingCardData } from "@/lib/supabase/types";
 import { getServerI18n, getLocale } from "@/lib/i18n/server";
+import { getReputationMap } from "@/lib/reviews";
 import { locales, defaultLocale, localizePath, type Locale } from "@/lib/i18n/config";
 import { SITE_URL } from "@/lib/constants";
 
@@ -59,7 +60,7 @@ export default async function ListingsPage({
   let listingsQuery = supabase
     .from("listings")
     .select(
-      "id, slug, name, image_url, price_per_day, availability, total_quantity, available_quantity, governorate, category_slug, profiles(full_name)"
+      "id, owner_id, slug, name, image_url, price_per_day, availability, total_quantity, available_quantity, governorate, category_slug, profiles(full_name)"
     )
     .order("created_at", { ascending: false });
 
@@ -89,6 +90,11 @@ export default async function ListingsPage({
   }
 
   const { data: listings } = await listingsQuery.returns<ListingCardData[]>();
+
+  const reputationMap = await getReputationMap(supabase, (listings ?? []).map((listing) => listing.owner_id));
+  for (const listing of listings ?? []) {
+    listing.reputation = reputationMap.get(listing.owner_id) ?? null;
+  }
 
   return (
     <div className="bg-subtle">

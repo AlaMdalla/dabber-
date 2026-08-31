@@ -11,10 +11,11 @@ import {
   MessageCircle,
   Package,
   PackageCheck,
+  Star,
   User as UserIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, StorefrontListing } from "@/lib/supabase/types";
+import type { Profile, ProfileReputation, StorefrontListing } from "@/lib/supabase/types";
 import { getServerI18n } from "@/lib/i18n/server";
 import { categories } from "@/data/categories";
 import { localizeCategory } from "@/lib/i18n/categories";
@@ -61,6 +62,7 @@ export default async function PublicProfilePage({
     { data: userData },
     { data: verifiedRow },
     { count: completedRentalsCount },
+    { data: reputation },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -77,6 +79,11 @@ export default async function PublicProfilePage({
       .select("id", { count: "exact", head: true })
       .eq("owner_id", id)
       .eq("status", "completed"),
+    supabase
+      .from("profile_reputation")
+      .select("avg_rating, review_count")
+      .eq("user_id", id)
+      .maybeSingle<Pick<ProfileReputation, "avg_rating" | "review_count">>(),
   ]);
 
   if (!profile) {
@@ -158,6 +165,12 @@ export default async function PublicProfilePage({
                 <span className="flex items-center gap-1.5">
                   <PackageCheck className="h-4 w-4" aria-hidden="true" />
                   {t("profile.completedRentals", { count: completedRentalsCount ?? 0 })}
+                </span>
+              )}
+              {reputation && (
+                <span className="flex items-center gap-1.5">
+                  <Star className="h-4 w-4 fill-accent text-accent" aria-hidden="true" />
+                  {t("profile.rating", { rating: reputation.avg_rating.toFixed(1), count: reputation.review_count })}
                 </span>
               )}
             </p>

@@ -88,6 +88,10 @@ function rentalRequestCopy(notification: RentalRequestNotificationRow, t: Transl
       return t("notifications.returnConditionSubmitted", { actor: actorName });
     case "rental_completed":
       return t("notifications.rentalCompleted");
+    case "review_received":
+      return t("notifications.reviewReceived", { actor: actorName });
+    case "reviews_revealed":
+      return t("notifications.reviewsRevealed");
   }
 }
 

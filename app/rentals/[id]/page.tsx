@@ -6,6 +6,7 @@ import type {
   RentalHandoverWithPhotos,
   RentalRequestWithItems,
   RentalReturn,
+  Review,
 } from "@/lib/supabase/types";
 import RentalRecordView from "@/components/rentals/RentalRecordView";
 
@@ -42,7 +43,7 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
     notFound();
   }
 
-  const [{ data: handover }, { data: rentalReturn }, { count: medicalItemCount }] = await Promise.all([
+  const [{ data: handover }, { data: rentalReturn }, { count: medicalItemCount }, { data: reviews }] = await Promise.all([
     supabase
       .from("rental_handovers")
       .select("*, rental_handover_photos(*)")
@@ -58,6 +59,11 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
       .select("id", { count: "exact", head: true })
       .eq("category_slug", "materiel-medical")
       .in("id", rental.rental_request_items.map((item) => item.listing_id)),
+    supabase
+      .from("reviews")
+      .select("*")
+      .eq("rental_request_id", id)
+      .returns<Review[]>(),
   ]);
   const isMedicalRental = (medicalItemCount ?? 0) > 0;
 
@@ -86,6 +92,7 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
       initialHandoverPhotoUrls={photoUrls}
       initialReturn={rentalReturn ?? null}
       isMedicalRental={isMedicalRental}
+      initialReviews={reviews ?? []}
     />
   );
 }

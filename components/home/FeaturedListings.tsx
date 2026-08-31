@@ -5,6 +5,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import type { ListingCardData } from "@/lib/supabase/types";
 import { getServerI18n } from "@/lib/i18n/server";
+import { getReputationMap } from "@/lib/reviews";
 
 export default async function FeaturedListings() {
   const { t } = await getServerI18n();
@@ -12,11 +13,16 @@ export default async function FeaturedListings() {
   const { data: listings } = await supabase
     .from("listings")
     .select(
-      "id, slug, name, image_url, price_per_day, availability, total_quantity, available_quantity, governorate, category_slug, profiles(full_name)"
+      "id, owner_id, slug, name, image_url, price_per_day, availability, total_quantity, available_quantity, governorate, category_slug, profiles(full_name)"
     )
     .order("created_at", { ascending: false })
     .limit(8)
     .returns<ListingCardData[]>();
+
+  const reputationMap = await getReputationMap(supabase, (listings ?? []).map((listing) => listing.owner_id));
+  for (const listing of listings ?? []) {
+    listing.reputation = reputationMap.get(listing.owner_id) ?? null;
+  }
 
   return (
     <section className="border-y border-border bg-subtle py-16 sm:py-20">

@@ -16,11 +16,14 @@ import type {
   RentalRequestStatus,
   RentalRequestWithItems,
   RentalReturn,
+  Review,
 } from "@/lib/supabase/types";
 import HandoverConditionForm from "@/components/rentals/HandoverConditionForm";
 import ReturnConditionForm from "@/components/rentals/ReturnConditionForm";
 import ShortCodeReveal from "@/components/rentals/ShortCodeReveal";
 import ShortCodeEntry from "@/components/rentals/ShortCodeEntry";
+import ReviewForm from "@/components/rentals/ReviewForm";
+import { ReviewDisplay, ReviewPendingReveal } from "@/components/rentals/ReviewDisplay";
 
 const STATUS_KEYS: Record<RentalRequestStatus, TranslationKey> = {
   pending: "calendar.pending",
@@ -59,6 +62,7 @@ interface RentalRecordViewProps {
   initialHandoverPhotoUrls: Record<string, string>;
   initialReturn: RentalReturn | null;
   isMedicalRental: boolean;
+  initialReviews: Review[];
 }
 
 export default function RentalRecordView({
@@ -70,6 +74,7 @@ export default function RentalRecordView({
   initialHandoverPhotoUrls,
   initialReturn,
   isMedicalRental,
+  initialReviews,
 }: RentalRecordViewProps) {
   const { t, locale } = useI18n();
   const [rental, setRental] = useState(initialRental);
@@ -79,10 +84,13 @@ export default function RentalRecordView({
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
+  const [reviews, setReviews] = useState(initialReviews);
 
   const isOwner = currentUserId === rental.owner_id;
   const isRenter = currentUserId === rental.renter_id;
   const counterpartName = (isOwner ? renterProfile?.full_name : ownerProfile?.full_name) ?? t("listing.dabberUser");
+  const ownReview = reviews.find((review) => review.reviewer_id === currentUserId) ?? null;
+  const counterpartReview = reviews.find((review) => review.reviewer_id !== currentUserId) ?? null;
   const total = rental.status === "pending" ? rental.estimated_total : (rental.confirmed_total ?? rental.estimated_total);
 
   // Live sync so both sides see the same state during the handover/return
@@ -109,6 +117,16 @@ export default function RentalRecordView({
         "postgres_changes",
         { event: "*", schema: "public", table: "rental_returns", filter: `rental_request_id=eq.${rental.id}` },
         (payload) => setRentalReturn(payload.new as RentalReturn),
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "reviews", filter: `rental_request_id=eq.${rental.id}` },
+        (payload) => {
+          const nextReview = payload.new as Review;
+          setReviews((current) =>
+            current.some((review) => review.id === nextReview.id) ? current : [...current, nextReview],
+          );
+        },
       )
       .subscribe();
 
@@ -373,10 +391,40 @@ export default function RentalRecordView({
         )}
 
         {rental.status === "completed" && (
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-center">
-            <CheckCircle2 className="mx-auto h-7 w-7 text-blue-700" aria-hidden="true" />
-            <p className="mt-2 text-sm font-semibold text-blue-800">{t("rentals.completedTitle")}</p>
-            <p className="mt-1 text-sm text-blue-700">{t("rentals.completedDescription")}</p>
+          <div className="flex flex-col gap-4">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-center">
+              <CheckCircle2 className="mx-auto h-7 w-7 text-blue-700" aria-hidden="true" />
+              <p className="mt-2 text-sm font-semibold text-blue-800">{t("rentals.completedTitle")}</p>
+              <p className="mt-1 text-sm text-blue-700">{t("rentals.completedDescription")}</p>
+            </div>
+
+            {ownReview ? (
+              <ReviewDisplay review={ownReview} authorName={t("review.you")} />
+            ) : (
+              <ReviewForm
+                rentalRequestId={rental.id}
+                revieweeRole={isOwner ? "renter" : "owner"}
+                onSubmitted={async (review) => {
+                  // Submitting our own review can also reveal the
+                  // counterpart's pre-existing one (if this is the 2nd
+                  // review), so re-fetch rather than just appending --
+                  // their row was never visible to us before this moment.
+                  const supabase = createClient();
+                  const { data } = await supabase
+                    .from("reviews")
+                    .select("*")
+                    .eq("rental_request_id", rental.id)
+                    .returns<Review[]>();
+                  setReviews(data ?? [review]);
+                }}
+              />
+            )}
+
+            {counterpartReview ? (
+              <ReviewDisplay review={counterpartReview} authorName={counterpartName} />
+            ) : ownReview ? (
+              <ReviewPendingReveal />
+            ) : null}
           </div>
         )}
 

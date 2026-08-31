@@ -72,6 +72,7 @@ export interface ListingCommentWithAuthor extends ListingComment {
 export type ListingCardData = Pick<
   Listing,
   | "id"
+  | "owner_id"
   | "slug"
   | "name"
   | "image_url"
@@ -83,6 +84,8 @@ export type ListingCardData = Pick<
   | "available_quantity"
 > & {
   profiles: Pick<Profile, "full_name"> | null;
+  /** Attached client/server-side from a separate `profile_reputation` lookup, not a direct join -- see `lib/reviews.ts`. */
+  reputation?: Pick<ProfileReputation, "avg_rating" | "review_count"> | null;
 };
 
 /** Columns the account/profile "my listings" links render. */
@@ -303,7 +306,9 @@ export type RentalRequestNotificationType =
   | "handover_confirmed"
   | "rental_active"
   | "return_condition_submitted"
-  | "rental_completed";
+  | "rental_completed"
+  | "review_received"
+  | "reviews_revealed";
 
 export interface RentalRequestNotification {
   id: string;
@@ -349,4 +354,31 @@ export interface RentalReturn {
   owner_submitted_at: string | null;
   code_confirmed_at: string | null;
   created_at: string;
+}
+
+export type ReviewTag =
+  | "item_matched_description"
+  | "responsive"
+  | "on_time"
+  | "returned_on_time"
+  | "took_care_of_item"
+  | "showed_up_as_agreed";
+
+export interface Review {
+  id: string;
+  rental_request_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  comment: string | null;
+  tags: ReviewTag[];
+  created_at: string;
+  edited_at: string | null;
+}
+
+/** Row from the public `profile_reputation` view -- only ever the reveal-gated aggregate, never a raw review. */
+export interface ProfileReputation {
+  user_id: string;
+  avg_rating: number;
+  review_count: number;
 }
