@@ -68,6 +68,7 @@ export default async function ReservationsPage() {
     confirmed: { label: t("reservations.confirmedLabel"), classes: "bg-green-100 text-green-800", message: t("reservations.confirmedMessage") },
     declined: { label: t("calendar.declined"), classes: "bg-red-100 text-red-800", message: t("reservations.declinedMessage") },
     cancelled: { label: t("calendar.cancelled"), classes: "bg-slate-100 text-slate-700", message: t("reservations.cancelledMessage") },
+    returned: { label: t("calendar.returned"), classes: "bg-blue-100 text-blue-800", message: t("reservations.returnedMessage") },
   };
 
   return (
@@ -124,6 +125,9 @@ export default async function ReservationsPage() {
                       {formatDate(reservation.start_date, locale)}
                       {reservation.end_date !== reservation.start_date &&
                         ` → ${formatDate(reservation.end_date, locale)}`}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {t("reservations.quantity", { quantity: reservation.quantity })}
                     </p>
                     <span
                       className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status.classes}`}

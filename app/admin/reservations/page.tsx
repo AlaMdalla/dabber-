@@ -35,12 +35,14 @@ export default async function AdminReservationsPage() {
     confirmed: "bg-green-100 text-green-800",
     declined: "bg-red-100 text-red-800",
     cancelled: "bg-slate-100 text-slate-700",
+    returned: "bg-blue-100 text-blue-800",
   };
   const statusLabels: Record<ReservationStatus, string> = {
     pending: t("calendar.pending"),
     confirmed: t("reservations.confirmedLabel"),
     declined: t("calendar.declined"),
     cancelled: t("calendar.cancelled"),
+    returned: t("calendar.returned"),
   };
 
   return (
@@ -70,6 +72,9 @@ export default async function AdminReservationsPage() {
                     )}
                     <p className="mt-1 text-xs text-muted">
                       {t("admin.renter")}: {reservation.profiles?.full_name ?? t("listing.dabberUser")}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {t("reservations.quantity", { quantity: reservation.quantity })}
                     </p>
                     <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
                       <CalendarDays className="h-4 w-4" aria-hidden="true" />

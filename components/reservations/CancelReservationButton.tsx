@@ -24,10 +24,10 @@ export default function CancelReservationButton({
     setIsCancelling(true);
     setError(null);
     const supabase = createClient();
-    const { error: cancelError } = await supabase
-      .from("reservations")
-      .update({ status: "cancelled" })
-      .eq("id", reservationId);
+    const { error: cancelError } = await supabase.rpc("transition_reservation", {
+      p_reservation_id: reservationId,
+      p_status: "cancelled",
+    });
 
     if (cancelError) {
       setError(describeError(cancelError));

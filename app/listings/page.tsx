@@ -59,7 +59,7 @@ export default async function ListingsPage({
   let listingsQuery = supabase
     .from("listings")
     .select(
-      "id, slug, name, image_url, price_per_day, availability, governorate, category_slug, profiles(full_name)"
+      "id, slug, name, image_url, price_per_day, availability, total_quantity, available_quantity, governorate, category_slug, profiles(full_name)"
     )
     .order("created_at", { ascending: false });
 

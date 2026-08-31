@@ -18,6 +18,8 @@ interface AvailabilityCalendarProps {
   listingSlug: string;
   isOwner: boolean;
   currentUserId: string | null;
+  totalQuantity: number;
+  availableQuantity: number;
 }
 
 type DayStatus = "green" | "orange" | "red";
@@ -67,6 +69,8 @@ export default function AvailabilityCalendar({
   listingSlug,
   isOwner,
   currentUserId,
+  totalQuantity,
+  availableQuantity,
 }: AvailabilityCalendarProps) {
   const { locale, t } = useI18n();
   const weekdayLabels = t("calendar.weekdays").split(",");
@@ -75,6 +79,7 @@ export default function AvailabilityCalendar({
     confirmed: t("status.confirmed"),
     declined: t("calendar.declined"),
     cancelled: t("calendar.cancelled"),
+    returned: t("calendar.returned"),
   };
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(
@@ -91,6 +96,8 @@ export default function AvailabilityCalendar({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [currentAvailableQuantity, setCurrentAvailableQuantity] = useState(availableQuantity);
 
   async function fetchAvailability(): Promise<{
     ranges: AvailabilityRange[];
@@ -191,7 +198,7 @@ export default function AvailabilityCalendar({
   function isDayClickable(iso: string, status: DayStatus) {
     if (isPast(iso) || status === "red") return false;
     if (isOwner) return status === "green";
-    return true;
+    return currentAvailableQuantity > 0;
   }
 
   function handleDayClick(iso: string, status: DayStatus) {
@@ -248,6 +255,7 @@ export default function AvailabilityCalendar({
         renter_id: currentUserId,
         start_date: selectedStart,
         end_date: selectedEnd,
+        quantity,
       });
 
       if (insertError) throw insertError;
@@ -313,15 +321,15 @@ export default function AvailabilityCalendar({
 
   async function handleOwnerAction(
     reservationId: string,
-    status: "confirmed" | "declined" | "cancelled"
+    status: "confirmed" | "declined" | "cancelled" | "returned"
   ) {
     setError(null);
     const supabase = createClient();
 
-    const { error: updateError } = await supabase
-      .from("reservations")
-      .update({ status })
-      .eq("id", reservationId);
+    const { error: updateError } = await supabase.rpc("transition_reservation", {
+      p_reservation_id: reservationId,
+      p_status: status,
+    });
 
     if (updateError) {
       console.error("[AvailabilityCalendar] owner action failed:", updateError);
@@ -329,6 +337,15 @@ export default function AvailabilityCalendar({
       return;
     }
 
+    const { data: stock } = await supabase
+      .from("listings")
+      .select("available_quantity")
+      .eq("id", listingId)
+      .single<{ available_quantity: number }>();
+    if (stock) {
+      setCurrentAvailableQuantity(stock.available_quantity);
+      setQuantity((value) => Math.min(value, Math.max(1, stock.available_quantity)));
+    }
     await loadAvailability();
   }
 
@@ -369,6 +386,13 @@ export default function AvailabilityCalendar({
       {isOwner && (
         <p className="mt-1 text-xs text-muted">{t("calendar.blockedLegend")}</p>
       )}
+      <p className="mt-2 text-xs font-medium text-ink">
+        {t("listing.quantityAvailable", {
+          available: currentAvailableQuantity,
+          total: totalQuantity,
+          item: t("listing.items"),
+        })}
+      </p>
 
       <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted">
         {weekdayLabels.map((label) => (
@@ -472,18 +496,29 @@ export default function AvailabilityCalendar({
               {t("calendar.login")}
             </Link>
           ) : (
-            <button
-              type="button"
-              disabled={!selectedEnd || isSubmitting}
-              onClick={handleReserve}
-              className="mt-3 h-10 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
-            >
-              {isSubmitting
-                ? t("common.sending")
-                : selectedEnd
-                  ? t("calendar.request")
-                  : t("calendar.chooseEnd")}
-            </button>
+            <div className="mt-3">
+              <label htmlFor="rentalQuantity" className="text-xs font-semibold text-ink">
+                {t("reservations.quantityLabel")}
+              </label>
+              <input
+                id="rentalQuantity"
+                type="number"
+                min="1"
+                max={currentAvailableQuantity}
+                required
+                value={quantity}
+                onChange={(event) => setQuantity(Number(event.target.value))}
+                className="mt-1 h-10 w-full rounded-xl border border-border px-3 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+              <button
+                type="button"
+                disabled={!selectedEnd || isSubmitting || currentAvailableQuantity === 0 || quantity < 1 || quantity > currentAvailableQuantity}
+                onClick={handleReserve}
+                className="mt-3 h-10 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
+              >
+                {isSubmitting ? t("common.sending") : selectedEnd ? t("calendar.request") : t("calendar.chooseEnd")}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -509,6 +544,7 @@ export default function AvailabilityCalendar({
                     )}
                     {reservation.end_date !== reservation.start_date &&
                       ` → ${fromISODate(reservation.end_date).toLocaleDateString(locale)}`}
+                    {` · ${t("reservations.quantity", { quantity: reservation.quantity })}`}
                     {" · "}
                     <span
                       className={
@@ -543,6 +579,15 @@ export default function AvailabilityCalendar({
                   >
                     {reservation.status === "pending" ? t("common.decline") : t("common.cancel")}
                   </button>
+                  {reservation.status === "confirmed" && (
+                    <button
+                      type="button"
+                      onClick={() => handleOwnerAction(reservation.id, "returned")}
+                      className="rounded-lg bg-blue-100 px-2.5 py-1.5 text-xs font-medium text-blue-800 transition-colors hover:bg-blue-200"
+                    >
+                      {t("reservations.markReturned")}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

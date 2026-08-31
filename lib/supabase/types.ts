@@ -21,6 +21,8 @@ export interface Listing {
   governorate: string;
   price_per_day: number | null;
   availability: Availability;
+  total_quantity: number;
+  available_quantity: number;
   image_url: string | null;
   created_at: string;
   updated_at: string;
@@ -64,6 +66,8 @@ export type ListingCardData = Pick<
   | "availability"
   | "governorate"
   | "category_slug"
+  | "total_quantity"
+  | "available_quantity"
 > & {
   profiles: Pick<Profile, "full_name"> | null;
 };
@@ -74,7 +78,7 @@ export type ListingSummary = Pick<
   "id" | "slug" | "name" | "image_url" | "price_per_day" | "governorate"
 >;
 
-export type ReservationStatus = "pending" | "confirmed" | "declined" | "cancelled";
+export type ReservationStatus = "pending" | "confirmed" | "declined" | "cancelled" | "returned";
 
 export interface Reservation {
   id: string;
@@ -83,6 +87,8 @@ export interface Reservation {
   start_date: string;
   end_date: string;
   status: ReservationStatus;
+  quantity: number;
+  inventory_restored: boolean;
   created_at: string;
   updated_at: string;
 }

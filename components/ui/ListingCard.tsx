@@ -14,7 +14,7 @@ interface ListingCardProps {
 
 export default function ListingCard({ listing }: ListingCardProps) {
   const { t } = useI18n();
-  const isAvailable = listing.availability === "disponible";
+  const isAvailable = listing.availability === "disponible" && listing.available_quantity > 0;
   const category =
     categories.find((item) => item.slug === listing.category_slug);
   const categoryName = category
@@ -58,6 +58,13 @@ export default function ListingCard({ listing }: ListingCardProps) {
           <p className="flex items-center gap-1 text-xs text-muted">
             <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {listing.governorate} · {posterName}
+          </p>
+          <p className="text-xs font-medium text-ink">
+            {t("listing.quantityAvailable", {
+              available: listing.available_quantity,
+              total: listing.total_quantity,
+              item: listing.name,
+            })}
           </p>
 
           <div className="mt-1 flex items-center justify-between">

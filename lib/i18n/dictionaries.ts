@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/i18n/config";
 
 const fr = {
+  "form.totalQuantity": "Quantité totale", "form.totalQuantityHelp": "Laissez 1 pour un article unique.", "listing.quantityAvailable": "{available} sur {total} {item} disponibles", "listing.items": "articles", "reservations.quantityLabel": "Quantité souhaitée", "reservations.quantity": "Quantité : {quantity}", "reservations.markReturned": "Marquer comme rendu", "reservations.returnedMessage": "Le matériel a été rendu.", "calendar.returned": "Rendue",
   "share.instructionsTitle": "Comment publier dans le groupe :",
   "share.instructionCopy": "Cliquez sur le bouton ci-dessous : le texte de l’annonce sera copié automatiquement.",
   "share.instructionOpen": "Le groupe Facebook Dabber s’ouvrira dans un nouvel onglet.",
@@ -154,6 +155,7 @@ export type TranslationKey = string;
 export type Dictionary = Record<string, string>;
 
 const en: Dictionary = {
+  "form.totalQuantity": "Total quantity", "form.totalQuantityHelp": "Leave this at 1 for a single item.", "listing.quantityAvailable": "{available} of {total} {item} available", "listing.items": "items", "reservations.quantityLabel": "Quantity needed", "reservations.quantity": "Quantity: {quantity}", "reservations.markReturned": "Mark returned", "reservations.returnedMessage": "The items have been returned.", "calendar.returned": "Returned",
   "share.instructionsTitle": "How to post in the group:",
   "share.instructionCopy": "Click the button below: the listing text will be copied automatically.",
   "share.instructionOpen": "The Dabber Facebook group will open in a new tab.",
@@ -183,6 +185,7 @@ const en: Dictionary = {
 };
 
 const ar: Dictionary = {
+  "form.totalQuantity": "الكمية الكل", "form.totalQuantityHelp": "خليها 1 كان الحاجة قطعة واحدة.", "listing.quantityAvailable": "{available} من {total} {item} متوفرين", "listing.items": "قطع", "reservations.quantityLabel": "الكمية المطلوبة", "reservations.quantity": "الكمية: {quantity}", "reservations.markReturned": "علّمها رجعت", "reservations.returnedMessage": "المعدّة رجعت.", "calendar.returned": "مرجّعة",
   "share.instructionsTitle": "كيفاش تنشر في القروب:",
   "share.instructionCopy": "إكبس على الزر لتحت: نص الإعلان يتنسخ وحدو.",
   "share.instructionOpen": "قروب دبّر على Facebook يتحلّ في صفحة جديدة.",

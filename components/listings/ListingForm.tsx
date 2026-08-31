@@ -105,6 +105,7 @@ export default function ListingForm({
   const [availability, setAvailability] = useState<Availability>(
     listing?.availability ?? "disponible"
   );
+  const [totalQuantity, setTotalQuantity] = useState(String(listing?.total_quantity ?? 1));
   const initialImages = listingImages.length > 0
     ? [...listingImages].sort((a, b) => a.position - b.position)
     : listing?.image_url
@@ -199,6 +200,7 @@ export default function ListingForm({
         governorate,
         price_per_day: pricePerDay ? Number(pricePerDay) : null,
         availability,
+        total_quantity: Number(totalQuantity),
         image_url: finalImages[0]?.image_url ?? null,
       };
 
@@ -408,6 +410,23 @@ export default function ListingForm({
             placeholder={t("form.pricePlaceholder")}
             className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="totalQuantity" className="text-xs font-semibold text-ink">
+            {t("form.totalQuantity")}
+          </label>
+          <input
+            id="totalQuantity"
+            type="number"
+            min="1"
+            step="1"
+            required
+            value={totalQuantity}
+            onChange={(event) => setTotalQuantity(event.target.value)}
+            className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
+          <p className="text-xs text-muted">{t("form.totalQuantityHelp")}</p>
         </div>
 
         <div className="flex flex-col gap-1.5">

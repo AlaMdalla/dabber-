@@ -104,7 +104,7 @@ export default async function ListingDetailPage({
     .order("created_at", { ascending: true })
     .returns<ListingCommentWithAuthor[]>();
 
-  const isAvailable = listing.availability === "disponible";
+  const isAvailable = listing.availability === "disponible" && listing.available_quantity > 0;
   const isOwner = userData.user?.id === listing.owner_id;
   const category = categories.find((item) => item.slug === listing.category_slug);
   const categoryName = category ? localizeCategory(category, t).name : listing.category_slug;
@@ -260,6 +260,13 @@ export default async function ListingDetailPage({
               </span>
             )}
           </div>
+          <p className="mt-2 text-sm font-medium text-ink">
+            {t("listing.quantityAvailable", {
+              available: listing.available_quantity,
+              total: listing.total_quantity,
+              item: listing.name,
+            })}
+          </p>
 
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-white p-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
@@ -299,6 +306,8 @@ export default async function ListingDetailPage({
               listingSlug={listing.slug}
               isOwner={isOwner}
               currentUserId={userData.user?.id ?? null}
+              totalQuantity={listing.total_quantity}
+              availableQuantity={listing.available_quantity}
             />
           </div>
 
