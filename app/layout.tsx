@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import LocaleProvider from "@/components/i18n/LocaleProvider";
 import Toaster from "@/components/ui/Toaster";
+import MiniCart from "@/components/cart/MiniCart";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getLocale } from "@/lib/i18n/server";
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main className="flex flex-1 flex-col">{children}</main>
           <Footer />
           <Toaster />
+          <MiniCart />
         </LocaleProvider>
       </body>
     </html>

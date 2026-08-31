@@ -282,10 +282,16 @@ export default async function ListingDetailPage({
                 <UserIcon className="h-4 w-4" aria-hidden="true" />
               )}
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs text-muted">{t("listing.publishedBy")}</p>
               <p className="text-sm font-semibold text-ink">{posterName}</p>
             </div>
+            <Link
+              href={`/profiles/${listing.owner_id}`}
+              className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-ink transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {t("storefront.viewAllFromOwner")}
+            </Link>
           </div>
 
           {isOwner && (

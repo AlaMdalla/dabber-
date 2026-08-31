@@ -141,6 +141,9 @@ export interface Conversation {
   created_at: string;
 }
 
+export type MessageType = "text" | "rental_request" | "status_event";
+export type StatusEventType = "accepted" | "rejected" | "cancelled" | "completed";
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -148,6 +151,9 @@ export interface Message {
   recipient_id: string;
   body: string;
   listing_id: string | null;
+  message_type: MessageType;
+  rental_request_id: string | null;
+  status_event_type: StatusEventType | null;
   created_at: string;
   read_at: string | null;
 }
@@ -159,6 +165,7 @@ export type SharedListing = Pick<
 
 export interface MessageWithListing extends Message {
   listings: SharedListing | null;
+  rental_requests?: RentalRequestWithItems | null;
 }
 
 export interface ConversationWithDetails extends Conversation {
@@ -196,4 +203,90 @@ export interface AdminBanRow {
   banned_by: string | null;
   reason: string | null;
   created_at: string;
+}
+
+/** Columns the owner storefront (public profile page) renders per listing. */
+export type StorefrontListing = Pick<
+  Listing,
+  | "id"
+  | "slug"
+  | "name"
+  | "description"
+  | "image_url"
+  | "price_per_day"
+  | "availability"
+  | "category_slug"
+  | "governorate"
+  | "owner_id"
+  | "total_quantity"
+  | "available_quantity"
+>;
+
+export type RentalRequestStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "cancelled"
+  | "completed";
+
+export type FulfillmentMethod = "pickup" | "delivery";
+
+export interface RentalRequest {
+  id: string;
+  renter_id: string;
+  owner_id: string;
+  status: RentalRequestStatus;
+  renter_message: string | null;
+  fulfillment_method: FulfillmentMethod;
+  delivery_address: string | null;
+  currency: string;
+  estimated_total: number | null;
+  confirmed_total: number | null;
+  conversation_id: string;
+  idempotency_key: string;
+  created_at: string;
+  updated_at: string;
+  accepted_at: string | null;
+  rejected_at: string | null;
+  cancelled_at: string | null;
+  completed_at: string | null;
+}
+
+export interface RentalRequestItem {
+  id: string;
+  rental_request_id: string;
+  listing_id: string;
+  reservation_id: string;
+  quantity: number;
+  start_date: string;
+  end_date: string;
+  unit_price: number | null;
+  listing_title: string;
+  listing_image_url: string | null;
+  subtotal: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RentalRequestWithItems extends RentalRequest {
+  rental_request_items: RentalRequestItem[];
+  renter?: Pick<Profile, "full_name" | "avatar_url"> | null;
+  owner?: Pick<Profile, "full_name" | "avatar_url"> | null;
+}
+
+export type RentalRequestNotificationType =
+  | "rental_request_submitted"
+  | "rental_request_accepted"
+  | "rental_request_rejected"
+  | "rental_request_cancelled"
+  | "rental_request_completed";
+
+export interface RentalRequestNotification {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  rental_request_id: string;
+  type: RentalRequestNotificationType;
+  created_at: string;
+  read_at: string | null;
 }

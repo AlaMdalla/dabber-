@@ -7,22 +7,50 @@ import {
   ImageOff,
   MapPin,
   MessageCircle,
+  Package,
   User as UserIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { ListingSummary, Profile } from "@/lib/supabase/types";
+import type { Profile, StorefrontListing } from "@/lib/supabase/types";
 import { getServerI18n } from "@/lib/i18n/server";
+import { categories } from "@/data/categories";
+import { localizeCategory } from "@/lib/i18n/categories";
+import StorefrontFilters from "@/components/profiles/StorefrontFilters";
+import AddToRentalButton from "@/components/listings/AddToRentalButton";
 
 export const metadata: Metadata = {
   title: "Profil utilisateur",
 };
 
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function PublicProfilePage({
   params,
+  searchParams,
 }: PageProps<"/profiles/[id]">) {
   const { id } = await params;
+  const sp = await searchParams;
+  const query = firstValue(sp?.query)?.trim();
+  const category = firstValue(sp?.category);
   const { locale, t } = await getServerI18n();
   const supabase = await createClient();
+
+  let listingsQuery = supabase
+    .from("listings")
+    .select(
+      "id, slug, name, description, image_url, price_per_day, availability, category_slug, governorate, owner_id, total_quantity, available_quantity",
+    )
+    .eq("owner_id", id)
+    .order("created_at", { ascending: false });
+
+  if (query) {
+    listingsQuery = listingsQuery.ilike("name", `%${query}%`);
+  }
+  if (category) {
+    listingsQuery = listingsQuery.eq("category_slug", category);
+  }
 
   const [{ data: profile }, { data: listings }, { data: userData }] = await Promise.all([
     supabase
@@ -32,12 +60,7 @@ export default async function PublicProfilePage({
       .single<
         Pick<Profile, "id" | "full_name" | "avatar_url" | "whatsapp_number" | "created_at">
       >(),
-    supabase
-      .from("listings")
-      .select("id, slug, name, image_url, price_per_day, governorate")
-      .eq("owner_id", id)
-      .order("created_at", { ascending: false })
-      .returns<ListingSummary[]>(),
+    listingsQuery.returns<StorefrontListing[]>(),
     supabase.auth.getUser(),
   ]);
 
@@ -57,10 +80,19 @@ export default async function PublicProfilePage({
     t("messages.profileGreeting"),
   );
 
+  // No dedicated profile location field exists, so use the most common
+  // governorate across the owner's own listings as a best-effort signal.
+  const locationCounts = new Map<string, number>();
+  for (const listing of listings ?? []) {
+    locationCounts.set(listing.governorate, (locationCounts.get(listing.governorate) ?? 0) + 1);
+  }
+  const primaryLocation =
+    [...locationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <section className="rounded-2xl border border-border bg-white p-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-subtle text-muted">
             {profile.avatar_url ? (
               <Image
@@ -78,9 +110,21 @@ export default async function PublicProfilePage({
             <h1 className="truncate text-2xl font-bold tracking-tight text-ink">
               {displayName}
             </h1>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              {t("profile.memberSince", { date: joinedAt })}
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                {t("profile.memberSince", { date: joinedAt })}
+              </span>
+              {primaryLocation && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
+                  {primaryLocation}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Package className="h-4 w-4" aria-hidden="true" />
+                {t("storefront.listingCount", { count: listings?.length ?? 0 })}
+              </span>
             </p>
           </div>
         </div>
@@ -98,53 +142,106 @@ export default async function PublicProfilePage({
         )}
       </section>
 
-      <section className="mt-10">
+      <section className="mt-8">
         <h2 className="text-lg font-semibold text-ink">
           {t("profile.listings", { name: displayName })}
         </h2>
 
+        {((listings && listings.length > 0) || query || category) && (
+          <div className="mt-4">
+            <StorefrontFilters ownerId={id} initialQuery={query} initialCategory={category} />
+          </div>
+        )}
+
         {listings && listings.length > 0 ? (
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-            {listings.map((listing) => (
-              <li key={listing.id}>
-                <Link
-                  href={`/listings/${listing.slug}`}
-                  className="flex h-full gap-4 rounded-2xl border border-border bg-white p-4 transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+            {listings.map((listing) => {
+              const isAvailable =
+                listing.availability === "disponible" && listing.available_quantity > 0;
+              const listingCategory = categories.find((c) => c.slug === listing.category_slug);
+              const categoryName = listingCategory
+                ? localizeCategory(listingCategory, t).name
+                : listing.category_slug;
+
+              return (
+                <li
+                  key={listing.id}
+                  className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-white p-4"
                 >
-                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-subtle text-muted">
-                    {listing.image_url ? (
-                      <Image
-                        src={listing.image_url}
-                        alt=""
-                        fill
-                        sizes="80px"
-                        className="object-cover"
+                  <Link
+                    href={`/listings/${listing.slug}`}
+                    className="flex gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-subtle text-muted">
+                      {listing.image_url ? (
+                        <Image
+                          src={listing.image_url}
+                          alt=""
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <ImageOff className="h-5 w-5" aria-hidden="true" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-flex rounded-full bg-ink px-2 py-0.5 text-[11px] font-medium text-white">
+                        {categoryName}
+                      </span>
+                      <p className="mt-1.5 truncate text-sm font-semibold text-ink">
+                        {listing.name}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+                        <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                        {listing.governorate}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-sm font-medium text-ink">
+                          {listing.price_per_day !== null
+                            ? t("common.priceDay", { price: listing.price_per_day })
+                            : t("common.priceRequest")}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            isAvailable
+                              ? "bg-green-100 text-green-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {isAvailable ? t("common.available") : t("common.toConfirm")}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {!isOwnProfile &&
+                    (userData.user ? (
+                      <AddToRentalButton
+                        listingId={listing.id}
+                        listingSlug={listing.slug}
+                        listingName={listing.name}
+                        listingImageUrl={listing.image_url}
+                        unitPrice={listing.price_per_day}
+                        availableQuantity={listing.available_quantity}
+                        ownerId={listing.owner_id}
+                        ownerName={displayName}
                       />
                     ) : (
-                      <ImageOff className="h-5 w-5" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">
-                      {listing.name}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                      {listing.governorate}
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-ink">
-                      {listing.price_per_day !== null
-                        ? t("common.priceDay", { price: listing.price_per_day })
-                        : t("common.priceRequest")}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
+                      <Link
+                        href={`/login?next=/profiles/${id}`}
+                        className="flex h-10 items-center justify-center rounded-xl border border-border text-xs font-semibold text-ink hover:bg-subtle"
+                      >
+                        {t("cart.loginToRent")}
+                      </Link>
+                    ))}
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p className="mt-4 rounded-2xl border border-border bg-subtle p-6 text-sm text-muted">
-            {t("profile.noListings")}
+          <p className="mt-6 rounded-2xl border border-border bg-subtle p-6 text-sm text-muted">
+            {query || category ? t("storefront.noResults") : t("profile.noListings")}
           </p>
         )}
       </section>

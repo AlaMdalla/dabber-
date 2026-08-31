@@ -10,6 +10,8 @@ import type { Message, MessageWithListing, SharedListing } from "@/lib/supabase/
 import { useI18n } from "@/components/i18n/LocaleProvider";
 import { localizePath, type Locale } from "@/lib/i18n/config";
 import type { TranslationKey } from "@/lib/i18n/dictionaries";
+import RentalRequestCard from "@/components/messages/RentalRequestCard";
+import StatusEventPill from "@/components/messages/StatusEventPill";
 
 function formatBubbleTime(isoDate: string, locale: Locale) {
   return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
@@ -170,6 +172,24 @@ export default function MessageThread({
               });
           }
 
+          if (incoming.rental_request_id) {
+            void supabase
+              .from("rental_requests")
+              .select("*, rental_request_items(*)")
+              .eq("id", incoming.rental_request_id)
+              .single<MessageWithListing["rental_requests"]>()
+              .then(({ data: rentalRequest }) => {
+                if (!rentalRequest) return;
+                setMessages((current) =>
+                  current.map((message) =>
+                    message.id === incoming.id
+                      ? { ...message, rental_requests: rentalRequest }
+                      : message
+                  )
+                );
+              });
+          }
+
           if (incoming.recipient_id === currentUserId) {
             void supabase
               .rpc("mark_conversation_read", {
@@ -253,6 +273,21 @@ export default function MessageThread({
               new Date(previous.created_at).toDateString() !==
                 new Date(message.created_at).toDateString();
 
+            if (message.message_type === "status_event") {
+              return (
+                <div key={message.id}>
+                  {showDaySeparator && (
+                    <div className="my-4 flex justify-center">
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-muted">
+                        {formatDaySeparator(message.created_at, locale, t)}
+                      </span>
+                    </div>
+                  )}
+                  <StatusEventPill message={message} />
+                </div>
+              );
+            }
+
             return (
               <div key={message.id}>
                 {showDaySeparator && (
@@ -266,15 +301,19 @@ export default function MessageThread({
                   className={`flex flex-col gap-1 py-1.5 ${isMine ? "items-end" : "items-start"}`}
                 >
                   {message.listings && <SharedListingCard listing={message.listings} />}
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                      isMine
-                        ? "rounded-br-md bg-accent text-ink"
-                        : "rounded-bl-md border border-border bg-white text-ink"
-                    }`}
-                  >
-                    {message.body}
-                  </div>
+                  {message.message_type === "rental_request" && message.rental_requests ? (
+                    <RentalRequestCard request={message.rental_requests} currentUserId={currentUserId} />
+                  ) : (
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                        isMine
+                          ? "rounded-br-md bg-accent text-ink"
+                          : "rounded-bl-md border border-border bg-white text-ink"
+                      }`}
+                    >
+                      {message.body}
+                    </div>
+                  )}
                   <span className="px-1 text-[11px] text-muted">
                     {formatBubbleTime(message.created_at, locale)}
                   </span>

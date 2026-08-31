@@ -90,12 +90,19 @@ export default function Header() {
     const supabase = createClient();
 
     async function refreshNotificationCount() {
-      const { count } = await supabase
-        .from("reservation_notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_id", user!.id)
-        .is("read_at", null);
-      setNotificationUnreadCount(count ?? 0);
+      const [reservationResult, rentalRequestResult] = await Promise.all([
+        supabase
+          .from("reservation_notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_id", user!.id)
+          .is("read_at", null),
+        supabase
+          .from("rental_request_notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_id", user!.id)
+          .is("read_at", null),
+      ]);
+      setNotificationUnreadCount((reservationResult.count ?? 0) + (rentalRequestResult.count ?? 0));
     }
 
     void refreshNotificationCount();
@@ -108,6 +115,16 @@ export default function Header() {
           event: "INSERT",
           schema: "public",
           table: "reservation_notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => void refreshNotificationCount(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "rental_request_notifications",
           filter: `recipient_id=eq.${user.id}`,
         },
         () => void refreshNotificationCount(),

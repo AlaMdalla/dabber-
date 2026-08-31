@@ -44,7 +44,9 @@ export default async function ConversationPage({
 
   const { data: messages } = await supabase
     .from("messages")
-    .select("*, listings(name, slug, image_url, price_per_day, description)")
+    .select(
+      "*, listings(name, slug, image_url, price_per_day, description), rental_requests(*, rental_request_items(*))",
+    )
     .eq("conversation_id", id)
     .order("created_at", { ascending: true })
     .returns<MessageWithListing[]>();
