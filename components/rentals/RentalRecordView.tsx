@@ -58,6 +58,7 @@ interface RentalRecordViewProps {
   initialHandover: RentalHandoverWithPhotos | null;
   initialHandoverPhotoUrls: Record<string, string>;
   initialReturn: RentalReturn | null;
+  isMedicalRental: boolean;
 }
 
 export default function RentalRecordView({
@@ -68,6 +69,7 @@ export default function RentalRecordView({
   initialHandover,
   initialHandoverPhotoUrls,
   initialReturn,
+  isMedicalRental,
 }: RentalRecordViewProps) {
   const { t, locale } = useI18n();
   const [rental, setRental] = useState(initialRental);
@@ -266,6 +268,7 @@ export default function RentalRecordView({
                   <p className="mb-2 text-sm font-semibold text-ink">{t("handover.prepareTitle")}</p>
                   <HandoverConditionForm
                     rentalRequestId={rental.id}
+                    isMedical={isMedicalRental}
                     onSubmitted={(nextHandover) => setHandover(nextHandover)}
                   />
                 </>

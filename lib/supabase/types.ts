@@ -1,3 +1,5 @@
+export type AccountType = "individual" | "pharmacy" | "clinic";
+
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -5,11 +7,14 @@ export interface Profile {
   email: string | null;
   facebook_id: string | null;
   whatsapp_number: string | null;
+  account_type: AccountType;
   created_at: string;
   updated_at: string;
 }
 
 export type Availability = "disponible" | "a-confirmer";
+
+export type ConditionGrade = "neuf" | "bon_etat" | "use";
 
 export interface Listing {
   id: string;
@@ -20,10 +25,18 @@ export interface Listing {
   category_slug: string;
   governorate: string;
   price_per_day: number | null;
+  price_per_week: number | null;
+  price_per_month: number | null;
   availability: Availability;
   total_quantity: number;
   available_quantity: number;
   image_url: string | null;
+  condition_grade: ConditionGrade | null;
+  sanitized_at: string | null;
+  brand: string | null;
+  model: string | null;
+  delivery_available: boolean;
+  delivery_radius_km: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -176,7 +189,7 @@ export interface ConversationWithDetails extends Conversation {
 /** Row shown on the admin users list. */
 export type AdminUserRow = Pick<
   Profile,
-  "id" | "full_name" | "avatar_url" | "email" | "whatsapp_number" | "created_at"
+  "id" | "full_name" | "avatar_url" | "email" | "whatsapp_number" | "account_type" | "created_at"
 >;
 
 /** Row shown on the admin listings list. */
@@ -214,6 +227,8 @@ export type StorefrontListing = Pick<
   | "description"
   | "image_url"
   | "price_per_day"
+  | "price_per_week"
+  | "price_per_month"
   | "availability"
   | "category_slug"
   | "governorate"

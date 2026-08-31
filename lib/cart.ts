@@ -16,6 +16,8 @@ export interface CartItem {
   listingName: string;
   listingImageUrl: string | null;
   unitPrice: number | null;
+  weeklyPrice: number | null;
+  monthlyPrice: number | null;
   availableQuantity: number;
   quantity: number;
   startDate: string;

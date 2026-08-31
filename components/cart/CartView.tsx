@@ -27,6 +27,8 @@ interface LiveListing {
   slug: string;
   image_url: string | null;
   price_per_day: number | null;
+  price_per_week: number | null;
+  price_per_month: number | null;
   available_quantity: number;
 }
 
@@ -54,7 +56,7 @@ export default function CartView() {
     const supabase = createClient();
     supabase
       .from("listings")
-      .select("id, name, slug, image_url, price_per_day, available_quantity")
+      .select("id, name, slug, image_url, price_per_day, price_per_week, price_per_month, available_quantity")
       .in("id", cart.items.map((item) => item.listingId))
       .returns<LiveListing[]>()
       .then(({ data }) => {
@@ -89,8 +91,15 @@ export default function CartView() {
   const rows = cart.items.map((item) => {
     const live = liveListings[item.listingId];
     const unitPrice = live ? live.price_per_day : item.unitPrice;
+    const weeklyPrice = live ? live.price_per_week : item.weeklyPrice;
+    const monthlyPrice = live ? live.price_per_month : item.monthlyPrice;
     const availableQuantity = live ? live.available_quantity : item.availableQuantity;
-    const subtotal = itemSubtotal(unitPrice, item.quantity, item.startDate, item.endDate);
+    const subtotal = itemSubtotal(
+      { perDay: unitPrice, perWeek: weeklyPrice, perMonth: monthlyPrice },
+      item.quantity,
+      item.startDate,
+      item.endDate,
+    );
     const isMissingListing = !isLoadingAvailability && live === undefined;
     const isOverstocked = !isLoadingAvailability && !isMissingListing && item.quantity > availableQuantity;
     return { item, live, unitPrice, availableQuantity, subtotal, isOverstocked, isMissingListing };

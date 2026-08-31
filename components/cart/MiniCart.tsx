@@ -24,7 +24,14 @@ export default function MiniCart() {
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
   const total = cart.items.reduce(
-    (sum, item) => sum + (itemSubtotal(item.unitPrice, item.quantity, item.startDate, item.endDate) ?? 0),
+    (sum, item) =>
+      sum +
+      (itemSubtotal(
+        { perDay: item.unitPrice, perWeek: item.weeklyPrice, perMonth: item.monthlyPrice },
+        item.quantity,
+        item.startDate,
+        item.endDate,
+      ) ?? 0),
     0,
   );
 

@@ -22,7 +22,7 @@ export default async function AdminUsersPage({
 
   let usersQuery = supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, email, whatsapp_number, created_at")
+    .select("id, full_name, avatar_url, email, whatsapp_number, account_type, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -34,6 +34,7 @@ export default async function AdminUsersPage({
     { data: users },
     { data: admins },
     { data: bannedUsers },
+    { data: verifiedAccounts },
     {
       data: { user: currentUser },
     },
@@ -41,11 +42,13 @@ export default async function AdminUsersPage({
     usersQuery.returns<AdminUserRow[]>(),
     supabase.from("admins").select("user_id, created_at").returns<AdminRow[]>(),
     supabase.from("banned_users").select("user_id, banned_by, reason, created_at").returns<AdminBanRow[]>(),
+    supabase.from("verified_accounts").select("user_id").returns<{ user_id: string }[]>(),
     supabase.auth.getUser(),
   ]);
 
   const adminIds = new Set((admins ?? []).map((admin) => admin.user_id));
   const bannedIds = new Set((bannedUsers ?? []).map((ban) => ban.user_id));
+  const verifiedIds = new Set((verifiedAccounts ?? []).map((row) => row.user_id));
 
   return (
     <div>
@@ -120,6 +123,8 @@ export default async function AdminUsersPage({
                   isAdmin={userIsAdmin}
                   isBanned={userIsBanned}
                   isSelf={user.id === currentUser?.id}
+                  accountType={user.account_type}
+                  isVerified={verifiedIds.has(user.id)}
                 />
               </li>
             );

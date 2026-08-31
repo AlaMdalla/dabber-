@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/components/i18n/LocalizedLink";
-import { Camera, CircleDollarSign, Search } from "lucide-react";
+import { Camera, CircleDollarSign, Search, Stethoscope } from "lucide-react";
 import { useI18n } from "@/components/i18n/LocaleProvider";
 
 const PREVIEW_DAYS = [
@@ -80,9 +80,18 @@ export default function HeroSection() {
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-16 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
           <div className="text-center lg:text-start">
-            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white/80">
-              {t("home.hero.badge")}
-            </span>
+            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white/80">
+                {t("home.hero.badge")}
+              </span>
+              <Link
+                href="/listings?category=materiel-medical"
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-4 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b12]"
+              >
+                <Stethoscope className="h-3.5 w-3.5" aria-hidden="true" />
+                {t("home.hero.medicalBadge")}
+              </Link>
+            </div>
 
             <h1 className="mt-6 text-4xl font-extrabold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
               {t("home.hero.title")}

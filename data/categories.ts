@@ -12,6 +12,15 @@ export interface Category {
 
 export const categories: Category[] = [
   {
+    slug: "materiel-medical",
+    name: "Matériel médical & mobilité",
+    description:
+      "Lit médicalisé, fauteuil roulant, concentrateur d'oxygène, déambulateur, béquilles, matelas anti-escarres.",
+    icon: Stethoscope,
+    listingCount: 0,
+    note: "L'adéquation doit être confirmée avec un professionnel qualifié.",
+  },
+  {
     slug: "audiovisuel",
     name: "Audiovisuel",
     description: "Caméras, objectifs, éclairage et microphones.",
@@ -38,14 +47,6 @@ export const categories: Category[] = [
     description: "Robes de mariée, robes de soirée et tenues traditionnelles.",
     icon: Shirt,
     listingCount: 0,
-  },
-  {
-    slug: "materiel-medical",
-    name: "Matériel médical",
-    description: "Location de matériel médical professionnel.",
-    icon: Stethoscope,
-    listingCount: 0,
-    note: "L'adéquation doit être confirmée avec un professionnel qualifié.",
   },
   {
     slug: "maison-quotidien",

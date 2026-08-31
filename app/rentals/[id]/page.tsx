@@ -42,7 +42,7 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
     notFound();
   }
 
-  const [{ data: handover }, { data: rentalReturn }] = await Promise.all([
+  const [{ data: handover }, { data: rentalReturn }, { count: medicalItemCount }] = await Promise.all([
     supabase
       .from("rental_handovers")
       .select("*, rental_handover_photos(*)")
@@ -53,7 +53,13 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
       .select("*")
       .eq("rental_request_id", id)
       .maybeSingle<RentalReturn>(),
+    supabase
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("category_slug", "materiel-medical")
+      .in("id", rental.rental_request_items.map((item) => item.listing_id)),
   ]);
+  const isMedicalRental = (medicalItemCount ?? 0) > 0;
 
   let photoUrls: Record<string, string> = {};
   const photoPaths = handover?.rental_handover_photos.map((photo) => photo.storage_path) ?? [];
@@ -79,6 +85,7 @@ export default async function RentalRecordPage({ params }: PageProps<"/rentals/[
       initialHandover={handover ?? null}
       initialHandoverPhotoUrls={photoUrls}
       initialReturn={rentalReturn ?? null}
+      isMedicalRental={isMedicalRental}
     />
   );
 }

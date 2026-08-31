@@ -5,6 +5,7 @@ import Link from "@/components/i18n/LocalizedLink";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
+import { bestRateTotal, durationDays } from "@/lib/rentalPricing";
 import type {
   AvailabilityRange,
   ListingBlockedDate,
@@ -20,6 +21,10 @@ interface AvailabilityCalendarProps {
   currentUserId: string | null;
   totalQuantity: number;
   availableQuantity: number;
+  categorySlug?: string;
+  pricePerDay?: number | null;
+  pricePerWeek?: number | null;
+  pricePerMonth?: number | null;
 }
 
 type DayStatus = "green" | "orange" | "red";
@@ -71,8 +76,13 @@ export default function AvailabilityCalendar({
   currentUserId,
   totalQuantity,
   availableQuantity,
+  categorySlug,
+  pricePerDay = null,
+  pricePerWeek = null,
+  pricePerMonth = null,
 }: AvailabilityCalendarProps) {
   const { locale, t } = useI18n();
+  const isMedicalCategory = categorySlug === "materiel-medical";
   const weekdayLabels = t("calendar.weekdays").split(",");
   const statusLabel: Record<ReservationStatus, string> = {
     pending: t("calendar.pending"),
@@ -229,6 +239,22 @@ export default function AvailabilityCalendar({
     }
 
     setSelectedEnd(iso);
+  }
+
+  function applyDurationPreset(days: number) {
+    const start = toISODate(today);
+    const end = toISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + days - 1));
+    for (const day of eachIsoDayInRange(start, end)) {
+      const dayStatus = getDayStatus(day, ranges);
+      if (dayStatus === "red") {
+        setError(t("calendar.overlap"));
+        return;
+      }
+    }
+    setError(null);
+    setNotice(null);
+    setSelectedStart(start);
+    setSelectedEnd(end);
   }
 
   function eachIsoDayInRange(startIso: string, endIso: string) {
@@ -394,6 +420,25 @@ export default function AvailabilityCalendar({
         })}
       </p>
 
+      {!isOwner && isMedicalCategory && currentAvailableQuantity > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            { key: "duration.oneWeek", days: 7 },
+            { key: "duration.twoWeeks", days: 14 },
+            { key: "duration.oneMonth", days: 30 },
+          ].map(({ key, days }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => applyDurationPreset(days)}
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-subtle"
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted">
         {weekdayLabels.map((label) => (
           <div key={label}>{label}</div>
@@ -510,6 +555,21 @@ export default function AvailabilityCalendar({
                 onChange={(event) => setQuantity(Number(event.target.value))}
                 className="mt-1 h-10 w-full rounded-xl border border-border px-3 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
+              {selectedEnd &&
+                (() => {
+                  const total = bestRateTotal(
+                    { perDay: pricePerDay, perWeek: pricePerWeek, perMonth: pricePerMonth },
+                    durationDays(selectedStart, selectedEnd),
+                  );
+                  return total !== null ? (
+                    <p className="mt-2 flex items-center justify-between text-xs text-muted">
+                      <span>{t("cart.estimatedTotal")}</span>
+                      <span className="font-semibold text-ink">
+                        {t("common.priceValue", { price: total * quantity })}
+                      </span>
+                    </p>
+                  ) : null;
+                })()}
               <button
                 type="button"
                 disabled={!selectedEnd || isSubmitting || currentAvailableQuantity === 0 || quantity < 1 || quantity > currentAvailableQuantity}

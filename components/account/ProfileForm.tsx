@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Camera, User as UserIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
-import type { Profile } from "@/lib/supabase/types";
+import type { AccountType, Profile } from "@/lib/supabase/types";
 import { useI18n } from "@/components/i18n/LocaleProvider";
 
 interface ProfileFormProps {
@@ -55,6 +55,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
   const { t } = useI18n();
   const router = useRouter();
   const [fullName, setFullName] = useState(profile.full_name ?? "");
+  const [accountType, setAccountType] = useState<AccountType>(profile.account_type);
   const initialWhatsapp = splitWhatsappNumber(profile.whatsapp_number);
   const [countryCode, setCountryCode] = useState(initialWhatsapp.countryCode);
   const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsapp.localNumber);
@@ -117,6 +118,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           full_name: fullName.trim() || null,
           whatsapp_number: normalizedWhatsapp || null,
           avatar_url: avatarUrl,
+          account_type: accountType,
         })
         .eq("id", profile.id);
 
@@ -238,6 +240,23 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
         <p id="whatsapp-help" className="text-xs text-muted">
           {t("account.whatsappHelp")}
         </p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="account_type" className="text-xs font-semibold text-ink">
+          {t("account.type")}
+        </label>
+        <select
+          id="account_type"
+          value={accountType}
+          onChange={(event) => setAccountType(event.target.value as AccountType)}
+          className="h-12 rounded-xl border border-border bg-white px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <option value="individual">{t("account.typeIndividual")}</option>
+          <option value="pharmacy">{t("account.typePharmacy")}</option>
+          <option value="clinic">{t("account.typeClinic")}</option>
+        </select>
+        <p className="text-xs text-muted">{t("account.typeHelp")}</p>
       </div>
 
       <div className="flex items-center gap-3">

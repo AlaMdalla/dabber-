@@ -11,12 +11,33 @@ export function durationDays(startDate: string, endDate: string): number {
   return Math.max(1, days);
 }
 
+export interface RateOptions {
+  perDay: number | null;
+  perWeek: number | null;
+  perMonth: number | null;
+}
+
+/**
+ * Cheapest total across whichever of the three rates is configured, rounding
+ * the requested duration UP to the next whole week/month (a partial
+ * week/month bills as a full one — standard equipment-rental practice).
+ * Mirrored exactly by best_rate_total() in the submit_rental_request RPC so
+ * this preview and the persisted snapshot never diverge.
+ */
+export function bestRateTotal(rates: RateOptions, days: number): number | null {
+  const candidates: number[] = [];
+  if (rates.perDay !== null) candidates.push(rates.perDay * days);
+  if (rates.perWeek !== null) candidates.push(rates.perWeek * Math.ceil(days / 7));
+  if (rates.perMonth !== null) candidates.push(rates.perMonth * Math.ceil(days / 30));
+  return candidates.length > 0 ? Math.min(...candidates) : null;
+}
+
 export function itemSubtotal(
-  unitPrice: number | null,
+  rates: RateOptions,
   quantity: number,
   startDate: string,
   endDate: string,
 ): number | null {
-  if (unitPrice === null) return null;
-  return unitPrice * quantity * durationDays(startDate, endDate);
+  const total = bestRateTotal(rates, durationDays(startDate, endDate));
+  return total === null ? null : total * quantity;
 }

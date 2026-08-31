@@ -3,11 +3,14 @@ import Image from "next/image";
 import Link from "@/components/i18n/LocalizedLink";
 import { notFound } from "next/navigation";
 import {
+  BadgeCheck,
   CalendarDays,
+  Hospital,
   ImageOff,
   MapPin,
   MessageCircle,
   Package,
+  PackageCheck,
   User as UserIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +43,7 @@ export default async function PublicProfilePage({
   let listingsQuery = supabase
     .from("listings")
     .select(
-      "id, slug, name, description, image_url, price_per_day, availability, category_slug, governorate, owner_id, total_quantity, available_quantity",
+      "id, slug, name, description, image_url, price_per_day, price_per_week, price_per_month, availability, category_slug, governorate, owner_id, total_quantity, available_quantity",
     )
     .eq("owner_id", id)
     .order("created_at", { ascending: false });
@@ -52,21 +55,35 @@ export default async function PublicProfilePage({
     listingsQuery = listingsQuery.eq("category_slug", category);
   }
 
-  const [{ data: profile }, { data: listings }, { data: userData }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: listings },
+    { data: userData },
+    { data: verifiedRow },
+    { count: completedRentalsCount },
+  ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, whatsapp_number, created_at")
+      .select("id, full_name, avatar_url, whatsapp_number, account_type, created_at")
       .eq("id", id)
       .single<
-        Pick<Profile, "id" | "full_name" | "avatar_url" | "whatsapp_number" | "created_at">
+        Pick<Profile, "id" | "full_name" | "avatar_url" | "whatsapp_number" | "account_type" | "created_at">
       >(),
     listingsQuery.returns<StorefrontListing[]>(),
     supabase.auth.getUser(),
+    supabase.from("verified_accounts").select("user_id").eq("user_id", id).maybeSingle(),
+    supabase
+      .from("rental_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", id)
+      .eq("status", "completed"),
   ]);
 
   if (!profile) {
     notFound();
   }
+
+  const isVerified = Boolean(verifiedRow);
 
   const isOwnProfile = userData.user?.id === profile.id;
   const displayName = profile.full_name ?? t("listing.dabberUser");
@@ -107,8 +124,20 @@ export default async function PublicProfilePage({
             )}
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight text-ink">
+            <h1 className="flex flex-wrap items-center gap-2 truncate text-2xl font-bold tracking-tight text-ink">
               {displayName}
+              {profile.account_type !== "individual" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent/30 px-2.5 py-1 text-xs font-medium text-ink">
+                  <Hospital className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t(profile.account_type === "pharmacy" ? "profile.accountTypePharmacy" : "profile.accountTypeClinic")}
+                </span>
+              )}
+              {isVerified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">
+                  <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t("profile.verified")}
+                </span>
+              )}
             </h1>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
               <span className="flex items-center gap-1.5">
@@ -125,6 +154,12 @@ export default async function PublicProfilePage({
                 <Package className="h-4 w-4" aria-hidden="true" />
                 {t("storefront.listingCount", { count: listings?.length ?? 0 })}
               </span>
+              {Boolean(completedRentalsCount) && (
+                <span className="flex items-center gap-1.5">
+                  <PackageCheck className="h-4 w-4" aria-hidden="true" />
+                  {t("profile.completedRentals", { count: completedRentalsCount ?? 0 })}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -223,6 +258,8 @@ export default async function PublicProfilePage({
                         listingName={listing.name}
                         listingImageUrl={listing.image_url}
                         unitPrice={listing.price_per_day}
+                        weeklyPrice={listing.price_per_week}
+                        monthlyPrice={listing.price_per_month}
                         availableQuantity={listing.available_quantity}
                         ownerId={listing.owner_id}
                         ownerName={displayName}

@@ -12,6 +12,7 @@ import type { TranslationKey } from "@/lib/i18n/dictionaries";
 
 const navLinks = [
   { label: "nav.find", href: "/listings" },
+  { label: "nav.medicalCategory", href: "/listings?category=materiel-medical" },
   { label: "nav.categories", href: "/#categories" },
   { label: "nav.how", href: "/#comment-ca-marche" },
   { label: "nav.why", href: "/#confiance" },

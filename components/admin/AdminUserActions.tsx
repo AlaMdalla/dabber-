@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errorMessage";
 import { useI18n } from "@/components/i18n/LocaleProvider";
+import type { AccountType } from "@/lib/supabase/types";
 
 interface AdminUserActionsProps {
   userId: string;
   isAdmin: boolean;
   isBanned: boolean;
   isSelf: boolean;
+  accountType: AccountType;
+  isVerified: boolean;
 }
 
 export default function AdminUserActions({
@@ -18,11 +21,14 @@ export default function AdminUserActions({
   isAdmin,
   isBanned,
   isSelf,
+  accountType,
+  isVerified,
 }: AdminUserActionsProps) {
   const { t } = useI18n();
   const router = useRouter();
   const [isTogglingAdmin, setIsTogglingAdmin] = useState(false);
   const [isTogglingBan, setIsTogglingBan] = useState(false);
+  const [isTogglingVerified, setIsTogglingVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleToggleAdmin() {
@@ -61,6 +67,22 @@ export default function AdminUserActions({
     router.refresh();
   }
 
+  async function handleToggleVerified() {
+    setIsTogglingVerified(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: toggleError } = isVerified
+      ? await supabase.from("verified_accounts").delete().eq("user_id", userId)
+      : await supabase.from("verified_accounts").insert({ user_id: userId });
+
+    setIsTogglingVerified(false);
+    if (toggleError) {
+      setError(describeError(toggleError));
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <div className="flex shrink-0 flex-col items-end gap-1.5">
       <div className="flex gap-2">
@@ -72,6 +94,16 @@ export default function AdminUserActions({
         >
           {isAdmin ? t("admin.removeAdmin") : t("admin.makeAdmin")}
         </button>
+        {accountType !== "individual" && (
+          <button
+            type="button"
+            onClick={handleToggleVerified}
+            disabled={isTogglingVerified}
+            className="rounded-xl border border-border px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-subtle disabled:opacity-60"
+          >
+            {isVerified ? t("admin.unverify") : t("admin.verify")}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleToggleBan}

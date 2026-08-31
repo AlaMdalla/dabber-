@@ -18,10 +18,15 @@ interface Photo {
 
 interface HandoverConditionFormProps {
   rentalRequestId: string;
+  isMedical?: boolean;
   onSubmitted: (handover: RentalHandoverWithPhotos) => void;
 }
 
-export default function HandoverConditionForm({ rentalRequestId, onSubmitted }: HandoverConditionFormProps) {
+export default function HandoverConditionForm({
+  rentalRequestId,
+  isMedical = false,
+  onSubmitted,
+}: HandoverConditionFormProps) {
   const { t } = useI18n();
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -97,7 +102,9 @@ export default function HandoverConditionForm({ rentalRequestId, onSubmitted }: 
   return (
     <div className="rounded-2xl border border-border bg-white p-5">
       <p className="text-sm font-semibold text-ink">{t("handover.conditionTitle")}</p>
-      <p className="mt-1 text-xs text-muted">{t("handover.conditionHint")}</p>
+      <p className="mt-1 text-xs text-muted">
+        {t(isMedical ? "handover.conditionHintMedical" : "handover.conditionHint")}
+      </p>
 
       <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
         {photos.map((photo) => (
@@ -133,7 +140,7 @@ export default function HandoverConditionForm({ rentalRequestId, onSubmitted }: 
       <textarea
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        placeholder={t("handover.notePlaceholder")}
+        placeholder={t(isMedical ? "handover.notePlaceholderMedical" : "handover.notePlaceholder")}
         rows={2}
         maxLength={500}
         className="mt-4 w-full resize-none rounded-xl border border-border bg-subtle px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"

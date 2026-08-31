@@ -15,6 +15,8 @@ interface AddToRentalButtonProps {
   listingName: string;
   listingImageUrl: string | null;
   unitPrice: number | null;
+  weeklyPrice?: number | null;
+  monthlyPrice?: number | null;
   availableQuantity: number;
   ownerId: string;
   ownerName: string | null;
@@ -31,6 +33,8 @@ export default function AddToRentalButton({
   listingName,
   listingImageUrl,
   unitPrice,
+  weeklyPrice = null,
+  monthlyPrice = null,
   availableQuantity,
   ownerId,
   ownerName,
@@ -97,6 +101,8 @@ export default function AddToRentalButton({
       listingName,
       listingImageUrl,
       unitPrice,
+      weeklyPrice,
+      monthlyPrice,
       availableQuantity,
       quantity,
       startDate,

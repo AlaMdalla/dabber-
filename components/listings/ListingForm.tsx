@@ -9,7 +9,7 @@ import { describeError } from "@/lib/supabase/errorMessage";
 import { compressImage, MAX_SOURCE_IMAGE_SIZE, SUPPORTED_IMAGE_TYPES } from "@/lib/imageCompression";
 import { categories } from "@/data/categories";
 import { governorates } from "@/data/governorates";
-import type { Availability, Listing, ListingImage } from "@/lib/supabase/types";
+import type { Availability, ConditionGrade, Listing, ListingImage } from "@/lib/supabase/types";
 import { useI18n } from "@/components/i18n/LocaleProvider";
 import { localizePath } from "@/lib/i18n/config";
 import { localizeCategory } from "@/lib/i18n/categories";
@@ -70,10 +70,33 @@ export default function ListingForm({
       ? String(listing.price_per_day)
       : ""
   );
+  const [pricePerWeek, setPricePerWeek] = useState(
+    listing?.price_per_week !== null && listing?.price_per_week !== undefined
+      ? String(listing.price_per_week)
+      : ""
+  );
+  const [pricePerMonth, setPricePerMonth] = useState(
+    listing?.price_per_month !== null && listing?.price_per_month !== undefined
+      ? String(listing.price_per_month)
+      : ""
+  );
   const [availability, setAvailability] = useState<Availability>(
     listing?.availability ?? "disponible"
   );
   const [totalQuantity, setTotalQuantity] = useState(String(listing?.total_quantity ?? 1));
+  const [conditionGrade, setConditionGrade] = useState<ConditionGrade | "">(
+    listing?.condition_grade ?? ""
+  );
+  const [sanitizedAt, setSanitizedAt] = useState(listing?.sanitized_at ?? "");
+  const [brand, setBrand] = useState(listing?.brand ?? "");
+  const [model, setModel] = useState(listing?.model ?? "");
+  const [deliveryAvailable, setDeliveryAvailable] = useState(listing?.delivery_available ?? false);
+  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(
+    listing?.delivery_radius_km !== null && listing?.delivery_radius_km !== undefined
+      ? String(listing.delivery_radius_km)
+      : ""
+  );
+  const isMedicalCategory = categorySlug === "materiel-medical";
   const initialImages = listingImages.length > 0
     ? [...listingImages].sort((a, b) => a.position - b.position)
     : listing?.image_url
@@ -167,9 +190,18 @@ export default function ListingForm({
         category_slug: categorySlug,
         governorate,
         price_per_day: pricePerDay ? Number(pricePerDay) : null,
+        price_per_week: pricePerWeek ? Number(pricePerWeek) : null,
+        price_per_month: pricePerMonth ? Number(pricePerMonth) : null,
         availability,
         total_quantity: Number(totalQuantity),
         image_url: finalImages[0]?.image_url ?? null,
+        condition_grade: isMedicalCategory && conditionGrade ? conditionGrade : null,
+        sanitized_at: isMedicalCategory && sanitizedAt ? sanitizedAt : null,
+        brand: isMedicalCategory && brand.trim() ? brand.trim() : null,
+        model: isMedicalCategory && model.trim() ? model.trim() : null,
+        delivery_available: isMedicalCategory ? deliveryAvailable : false,
+        delivery_radius_km:
+          isMedicalCategory && deliveryAvailable && deliveryRadiusKm ? Number(deliveryRadiusKm) : null,
       };
 
       if (isEditing && listing) {
@@ -381,6 +413,38 @@ export default function ListingForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
+          <label htmlFor="pricePerWeek" className="text-xs font-semibold text-ink">
+            {t("form.pricePerWeek")}
+          </label>
+          <input
+            id="pricePerWeek"
+            type="number"
+            min="0"
+            step="0.5"
+            value={pricePerWeek}
+            onChange={(event) => setPricePerWeek(event.target.value)}
+            placeholder={t("form.pricePerWeekPlaceholder")}
+            className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="pricePerMonth" className="text-xs font-semibold text-ink">
+            {t("form.pricePerMonth")}
+          </label>
+          <input
+            id="pricePerMonth"
+            type="number"
+            min="0"
+            step="0.5"
+            value={pricePerMonth}
+            onChange={(event) => setPricePerMonth(event.target.value)}
+            placeholder={t("form.pricePerMonthPlaceholder")}
+            className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="totalQuantity" className="text-xs font-semibold text-ink">
             {t("form.totalQuantity")}
           </label>
@@ -417,6 +481,98 @@ export default function ListingForm({
           </select>
         </div>
       </div>
+
+      {isMedicalCategory && (
+        <div className="flex flex-col gap-4 rounded-xl border border-border bg-subtle p-4">
+          <p className="text-xs font-semibold text-ink">{t("form.medicalSectionTitle")}</p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="conditionGrade" className="text-xs font-semibold text-ink">
+                {t("form.conditionGrade")}
+              </label>
+              <select
+                id="conditionGrade"
+                value={conditionGrade}
+                onChange={(event) => setConditionGrade(event.target.value as ConditionGrade | "")}
+                className="h-12 rounded-xl border border-border bg-white px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <option value="">{t("form.conditionGradeUnset")}</option>
+                <option value="neuf">{t("form.conditionGradeNeuf")}</option>
+                <option value="bon_etat">{t("form.conditionGradeBonEtat")}</option>
+                <option value="use">{t("form.conditionGradeUse")}</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="sanitizedAt" className="text-xs font-semibold text-ink">
+                {t("form.sanitizedAt")}
+              </label>
+              <input
+                id="sanitizedAt"
+                type="date"
+                value={sanitizedAt}
+                onChange={(event) => setSanitizedAt(event.target.value)}
+                className="h-12 rounded-xl border border-border bg-white px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="brand" className="text-xs font-semibold text-ink">
+                {t("form.brand")}
+              </label>
+              <input
+                id="brand"
+                type="text"
+                value={brand}
+                onChange={(event) => setBrand(event.target.value)}
+                className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="model" className="text-xs font-semibold text-ink">
+                {t("form.model")}
+              </label>
+              <input
+                id="model"
+                type="text"
+                value={model}
+                onChange={(event) => setModel(event.target.value)}
+                className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={deliveryAvailable}
+                onChange={(event) => setDeliveryAvailable(event.target.checked)}
+                className="h-4 w-4 rounded border-border text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+              {t("form.deliveryAvailable")}
+            </label>
+            {deliveryAvailable && (
+              <div className="flex flex-col gap-1.5 sm:max-w-xs">
+                <label htmlFor="deliveryRadiusKm" className="text-xs font-semibold text-ink">
+                  {t("form.deliveryRadiusKm")}
+                </label>
+                <input
+                  id="deliveryRadiusKm"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={deliveryRadiusKm}
+                  onChange={(event) => setDeliveryRadiusKm(event.target.value)}
+                  className="h-12 rounded-xl border border-border px-3.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="images" className="text-xs font-semibold text-ink">

@@ -226,6 +226,55 @@ export default async function ListingDetailPage({
               </p>
             </div>
           )}
+
+          {listing.category_slug === "materiel-medical" &&
+            (listing.condition_grade || listing.brand || listing.model || listing.sanitized_at || listing.delivery_available) && (
+              <div className="mt-6 rounded-2xl border border-border bg-subtle p-4">
+                <h2 className="text-sm font-semibold text-ink">{t("listing.medicalDetailsTitle")}</h2>
+                <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1.5 text-sm text-muted sm:grid-cols-2">
+                  {listing.condition_grade && (
+                    <div className="flex justify-between gap-2 sm:justify-start">
+                      <dt>{t("form.conditionGrade")}</dt>
+                      <dd className="font-medium text-ink">
+                        {t(
+                          listing.condition_grade === "neuf"
+                            ? "form.conditionGradeNeuf"
+                            : listing.condition_grade === "bon_etat"
+                              ? "form.conditionGradeBonEtat"
+                              : "form.conditionGradeUse",
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                  {(listing.brand || listing.model) && (
+                    <div className="flex justify-between gap-2 sm:justify-start">
+                      <dt>{t("listing.brandModel")}</dt>
+                      <dd className="font-medium text-ink">{[listing.brand, listing.model].filter(Boolean).join(" ")}</dd>
+                    </div>
+                  )}
+                  {listing.sanitized_at && (
+                    <div className="flex justify-between gap-2 sm:justify-start">
+                      <dt>{t("form.sanitizedAt")}</dt>
+                      <dd className="font-medium text-ink">
+                        {new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
+                          new Date(`${listing.sanitized_at}T00:00:00Z`),
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                  {listing.delivery_available && (
+                    <div className="flex justify-between gap-2 sm:justify-start">
+                      <dt>{t("form.deliveryAvailable")}</dt>
+                      <dd className="font-medium text-ink">
+                        {listing.delivery_radius_km !== null
+                          ? t("listing.deliveryRadius", { radius: listing.delivery_radius_km })
+                          : t("common.available")}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
         </div>
 
         <div>
@@ -260,6 +309,16 @@ export default async function ListingDetailPage({
               </span>
             )}
           </div>
+          {(listing.price_per_week !== null || listing.price_per_month !== null) && (
+            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+              {listing.price_per_week !== null && (
+                <span>{t("listing.weeklyPrice", { price: listing.price_per_week })}</span>
+              )}
+              {listing.price_per_month !== null && (
+                <span>{t("listing.monthlyPrice", { price: listing.price_per_month })}</span>
+              )}
+            </p>
+          )}
           <p className="mt-2 text-sm font-medium text-ink">
             {t("listing.quantityAvailable", {
               available: listing.available_quantity,
@@ -314,6 +373,10 @@ export default async function ListingDetailPage({
               currentUserId={userData.user?.id ?? null}
               totalQuantity={listing.total_quantity}
               availableQuantity={listing.available_quantity}
+              categorySlug={listing.category_slug}
+              pricePerDay={listing.price_per_day}
+              pricePerWeek={listing.price_per_week}
+              pricePerMonth={listing.price_per_month}
             />
           </div>
 
